@@ -41,6 +41,8 @@ fun MonthScreen(
     onShiftMonth: (Long) -> Unit,
     onToday: () -> Unit,
     onRetry: () -> Unit,
+    onOpenEntry: (CalendarEntry) -> Unit,
+    onToggleEntry: (CalendarEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
@@ -99,7 +101,11 @@ fun MonthScreen(
 
         Spacer(Modifier.height(Space.lg))
 
-        DayAgenda(entries = state.selectedEntries)
+        DayAgenda(
+            entries = state.selectedEntries,
+            onOpen = onOpenEntry,
+            onToggle = onToggleEntry,
+        )
 
         Spacer(Modifier.height(Space.huge))
     }

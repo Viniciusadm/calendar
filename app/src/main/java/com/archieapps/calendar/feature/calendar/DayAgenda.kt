@@ -1,5 +1,6 @@
 package com.archieapps.calendar.feature.calendar
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +28,12 @@ private val gutter = 28.dp
 private val nodeCenterY = 13.dp
 
 @Composable
-fun DayAgenda(entries: List<CalendarEntry>, modifier: Modifier = Modifier) {
+fun DayAgenda(
+    entries: List<CalendarEntry>,
+    onOpen: (CalendarEntry) -> Unit,
+    onToggle: (CalendarEntry) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     if (entries.isEmpty()) {
         EmptyDay(modifier)
         return
@@ -39,6 +45,8 @@ fun DayAgenda(entries: List<CalendarEntry>, modifier: Modifier = Modifier) {
                 entry = entry,
                 drawLineAbove = index > 0,
                 drawLineBelow = index < entries.lastIndex,
+                onOpen = { onOpen(entry) },
+                onToggle = { onToggle(entry) },
             )
         }
     }
@@ -56,14 +64,23 @@ private fun EmptyDay(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SpineEntry(entry: CalendarEntry, drawLineAbove: Boolean, drawLineBelow: Boolean) {
+private fun SpineEntry(
+    entry: CalendarEntry,
+    drawLineAbove: Boolean,
+    drawLineBelow: Boolean,
+    onOpen: () -> Unit,
+    onToggle: () -> Unit,
+) {
     val colors = LocalChronicle.current
     val dim = entry.completed
+
+    val tappableNode = entry.isTask && entry.agency == Agency.Mine
 
     Row(modifier = Modifier.fillMaxWidth()) {
         Spacer(
             Modifier
                 .width(gutter)
+                .then(if (tappableNode) Modifier.clickable(onClick = onToggle) else Modifier)
                 .height(nodeCenterY * 2 + Space.lg)
                 .drawBehind {
                     val x = gutter.toPx() / 2
@@ -103,7 +120,12 @@ private fun SpineEntry(entry: CalendarEntry, drawLineAbove: Boolean, drawLineBel
                 }
         )
 
-        Column(modifier = Modifier.weight(1f).padding(bottom = Space.lg)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onOpen)
+                .padding(bottom = Space.lg)
+        ) {
             Text(
                 text = entry.title,
                 style = EntryTitle,

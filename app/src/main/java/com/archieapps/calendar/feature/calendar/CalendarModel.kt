@@ -10,6 +10,7 @@ enum class Agency { Mine, Arrives, Happened }
 
 data class CalendarEntry(
     val id: String,
+    val eventId: Int?,
     val title: String,
     val date: LocalDate,
     val clock: String?,
@@ -22,6 +23,8 @@ data class CalendarEntry(
     val isTask: Boolean,
     val categoryName: String?,
     val note: String?,
+    val recurring: Boolean,
+    val editable: Boolean,
 )
 
 fun OccurrenceDto.toEntry(): CalendarEntry {
@@ -33,6 +36,7 @@ fun OccurrenceDto.toEntry(): CalendarEntry {
 
     return CalendarEntry(
         id = id,
+        eventId = eventId,
         title = title,
         date = LocalDate.parse(date),
         clock = time,
@@ -45,6 +49,8 @@ fun OccurrenceDto.toEntry(): CalendarEntry {
         isTask = nature == "task",
         categoryName = categoryName,
         note = noteFromMeta(),
+        recurring = recurring,
+        editable = editable,
     )
 }
 

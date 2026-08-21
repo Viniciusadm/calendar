@@ -60,6 +60,41 @@ data class OccurrenceDto(
 )
 
 @Serializable
+data class Ack(
+    val success: Boolean = false,
+    val message: String? = null,
+    val error: String? = null,
+)
+
+@Serializable
+data class EventDto(
+    val id: Int,
+    val title: String,
+    val description: String? = null,
+    val nature: String = "event",
+    val date: String,
+    val time: String? = null,
+    val allDay: Boolean = true,
+    val durationMinutes: Int = 1440,
+    val categoryId: Int? = null,
+    val priority: String = "none",
+    val color: String? = null,
+    val colorToken: String? = null,
+    val recurrence: String? = null,
+    val requiresCode: Boolean = false,
+    val reminders: List<ReminderDto> = emptyList(),
+)
+
+@Serializable
+data class ReminderDto(
+    val id: Int = 0,
+    val minutesBefore: Int,
+    val method: String = "device",
+    val label: String? = null,
+    val active: Boolean = true,
+)
+
+@Serializable
 data class CategoryDto(
     val id: Int,
     val name: String,
