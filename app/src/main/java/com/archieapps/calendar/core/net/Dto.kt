@@ -1,0 +1,74 @@
+package com.archieapps.calendar.core.net
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+
+@Serializable
+data class Envelope<T>(
+    val success: Boolean = false,
+    val message: String? = null,
+    val body: T? = null,
+    val misc: FeedMisc? = null,
+    val error: String? = null,
+)
+
+@Serializable
+data class FeedMisc(
+    val window: FeedWindow? = null,
+    val truncated: Boolean = false,
+    val counts: Map<String, Int> = emptyMap(),
+)
+
+@Serializable
+data class FeedWindow(val start: String? = null, val end: String? = null)
+
+@Serializable
+data class OccurrenceDto(
+    val id: String,
+    val kind: String,
+    val nature: String,
+    val eventId: Int? = null,
+    val sourceId: Int? = null,
+    val seriesDate: String,
+    val date: String,
+    val endDate: String,
+    val time: String? = null,
+    val endTime: String? = null,
+    val allDay: Boolean = true,
+    val durationMinutes: Int = 1440,
+    val startsAt: String,
+    val endsAt: String,
+    val timezone: String,
+    val title: String,
+    val description: String? = null,
+    val color: String,
+    val colorToken: String? = null,
+    val colorSource: String,
+    val priority: String = "none",
+    val priorityWeight: Int = 0,
+    val categoryId: Int? = null,
+    val categoryName: String? = null,
+    val recurring: Boolean = false,
+    val overridden: Boolean = false,
+    val completed: Boolean = false,
+    val completedAt: String? = null,
+    val editable: Boolean = false,
+    val requiresCode: Boolean = false,
+    val remindersMuted: Boolean = false,
+    val meta: JsonObject? = null,
+)
+
+@Serializable
+data class CategoryDto(
+    val id: Int,
+    val name: String,
+    val slug: String,
+    val color: String,
+    val colorToken: String? = null,
+    val icon: String? = null,
+    @SerialName("defaultPriority") val defaultPriority: String = "none",
+    val active: Boolean = true,
+    @SerialName("isDefault") val isDefault: Boolean = false,
+    val position: Int = 0,
+)
