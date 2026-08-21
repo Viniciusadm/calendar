@@ -17,7 +17,6 @@ data class Envelope<T>(
 data class FeedMisc(
     val window: FeedWindow? = null,
     val truncated: Boolean = false,
-    val counts: Map<String, Int> = emptyMap(),
 )
 
 @Serializable
