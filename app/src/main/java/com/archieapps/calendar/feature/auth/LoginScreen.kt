@@ -47,8 +47,6 @@ fun LoginScreen(
         Text("sua agenda", style = Eyebrow, color = colors.slate)
         Spacer(Modifier.height(Space.sm))
         Text("entrar", style = MonthTitle, color = colors.ink)
-        Spacer(Modifier.height(Space.sm))
-        Text("Use a mesma conta do painel.", style = EntryMeta, color = colors.slate)
 
         Spacer(Modifier.height(Space.xxl))
 

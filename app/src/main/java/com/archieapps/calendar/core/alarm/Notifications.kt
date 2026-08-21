@@ -18,7 +18,6 @@ object Notifications {
             "Lembretes",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Avisos dos seus eventos e tarefas."
             enableVibration(true)
         }
 

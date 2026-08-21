@@ -74,7 +74,6 @@ fun EventEditor(
             value = draft.title,
             onValueChange = { value -> onChange { it.copy(title = value) } },
             label = "o quê",
-            placeholder = "Pilates, consulta, aniversário…",
             textStyle = SheetTitle,
         )
 

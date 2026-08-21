@@ -56,12 +56,6 @@ fun AccessCodeSheet(
         Text("código de acesso", style = Eyebrow, color = colors.slate)
         Spacer(Modifier.height(Space.sm))
         Text("•".repeat(filled).ifEmpty { "————" }, style = SheetTitle, color = colors.ink)
-        Spacer(Modifier.height(Space.xs))
-        Text(
-            "Toque no par que contém o dígito. Quem olhar a tela não vê qual você escolheu.",
-            style = EntryMeta,
-            color = colors.slate,
-        )
 
         Spacer(Modifier.height(Space.lg))
 

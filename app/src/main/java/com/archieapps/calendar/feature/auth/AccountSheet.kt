@@ -70,28 +70,15 @@ fun AccountSheet(
 
         PrivateSection(unlocked = unlocked, onAskCode = onAskCode, onLock = onLock)
 
-        Spacer(Modifier.height(Space.xl))
+        Spacer(Modifier.height(Space.lg))
 
-        Text("lembretes", style = Eyebrow, color = colors.slate)
-        Spacer(Modifier.height(Space.sm))
-
-        if (exactAlarmsAllowed) {
-            Text("Os avisos tocam na hora marcada.", style = EntryMeta, color = colors.slate)
-        } else {
-            Text(
-                "O sistema não está deixando este app usar alarme exato, então os avisos podem atrasar alguns minutos.",
-                style = EntryMeta,
-                color = colors.slate,
-            )
-
-            if (canRequestExactAlarms) {
-                TextButton(onClick = onRequestExactAlarms, contentPadding = PaddingValues(0.dp)) {
-                    Text("Permitir alarme exato", style = ButtonLabel, color = colors.brand)
-                }
+        if (! exactAlarmsAllowed && canRequestExactAlarms) {
+            TextButton(onClick = onRequestExactAlarms, contentPadding = PaddingValues(0.dp)) {
+                Text("Permitir alarme exato", style = ButtonLabel, color = colors.brand)
             }
-        }
 
-        Spacer(Modifier.height(Space.xl))
+            Spacer(Modifier.height(Space.lg))
+        }
 
         TextButton(
             onClick = onSignOut,
@@ -119,24 +106,12 @@ private fun PrivateSection(unlocked: Boolean, onAskCode: () -> Unit, onLock: () 
     Spacer(Modifier.height(Space.sm))
 
     if (unlocked) {
-        Text(
-            "Sessão liberada: você vê aniversários e marcos, e pode criar e editar.",
-            style = EntryMeta,
-            color = colors.slate,
-        )
-
         TextButton(onClick = onLock, contentPadding = PaddingValues(0.dp)) {
             Text("Travar de novo", style = ButtonLabel, color = colors.brand)
         }
 
         return
     }
-
-    Text(
-        "Sem o código, a agenda é só leitura e os itens privados ficam escondidos.",
-        style = EntryMeta,
-        color = colors.slate,
-    )
 
     TextButton(onClick = onAskCode, contentPadding = PaddingValues(0.dp)) {
         Text("Digitar o código", style = ButtonLabel, color = colors.brand)

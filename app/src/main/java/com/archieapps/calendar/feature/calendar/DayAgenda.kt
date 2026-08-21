@@ -58,8 +58,6 @@ private fun EmptyDay(modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxWidth().padding(vertical = Space.xl)) {
         Text("Nada marcado.", style = EntryTitle, color = colors.ink)
-        Spacer(Modifier.height(Space.xxs))
-        Text("Toque em + para marcar algo.", style = EntryMeta, color = colors.slate)
     }
 }
 

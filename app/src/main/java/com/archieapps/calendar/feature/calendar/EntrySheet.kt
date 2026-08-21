@@ -46,12 +46,6 @@ fun EntrySheet(
         Spacer(Modifier.height(Space.xl))
 
         if (entry.agency != Agency.Mine) {
-            Text(
-                text = readOnlyReason(entry),
-                style = EntryMeta,
-                color = colors.slate,
-            )
-            Spacer(Modifier.height(Space.lg))
             Action("Fechar", colors.slate, onDismiss)
             Spacer(Modifier.height(Space.xl))
             return@Column
@@ -95,9 +89,3 @@ private fun describe(entry: CalendarEntry): String = buildList {
     entry.note?.let { add(it) }
 }.joinToString(" · ")
 
-private fun readOnlyReason(entry: CalendarEntry): String = when (entry.kind) {
-    "birthday" -> "Aniversário vem do seu cadastro de pessoas. Para mudar, edite a pessoa."
-    "episode" -> "Episódio vem da sua lista de séries. Para mudar, marque como assistido lá."
-    "question" -> "Pergunta do dia vem do seu questionário diário."
-    else -> "Marco registrado. Não é editado pelo calendário."
-}
