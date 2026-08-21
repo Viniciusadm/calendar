@@ -17,7 +17,11 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 sealed interface ApiResult<out T> {
     data class Ok<T>(val value: T, val misc: FeedMisc? = null) : ApiResult<T>
-    data class Failure(val message: String, val unauthorized: Boolean = false) : ApiResult<Nothing>
+    data class Failure(
+        val message: String,
+        val unauthorized: Boolean = false,
+        val gated: Boolean = false,
+    ) : ApiResult<Nothing>
 }
 
 class CalendarApi(private val settings: Settings) {
@@ -59,9 +63,9 @@ class CalendarApi(private val settings: Settings) {
             authenticated = false,
         ) { json.decodeFromString<Envelope<Session>>(it).let { e -> e.success to (e.body to e.misc) } }
 
-    suspend fun unlockPrivate(pin: String): ApiResult<UnlockDto> =
-        send("POST", "/api/user/private-unlock", emptyMap(), jsonOf("pin" to pin)) {
-            json.decodeFromString<Envelope<UnlockDto>>(it).let { e -> e.success to (e.body to e.misc) }
+    suspend fun validateCode(code: String): ApiResult<Unit> =
+        send("POST", "/api/user/test", emptyMap(), jsonOf("code" to code)) {
+            json.decodeFromString<Ack>(it).let { ack -> ack.success to (Unit to null) }
         }
 
     suspend fun profile(): ApiResult<SessionUser> =
@@ -141,7 +145,7 @@ class CalendarApi(private val settings: Settings) {
             .method(method, body)
             .header("Accept", "application/json")
             .apply { if (token != null) header("Authorization", "Bearer $token") }
-            .apply { PrivateUnlock.header()?.let { header(PrivateUnlock.HEADER, it) } }
+            .apply { AccessCode.header()?.let { header(AccessCode.HEADER, it) } }
             .build()
 
         try {
@@ -162,7 +166,7 @@ class CalendarApi(private val settings: Settings) {
                 if (success && value != null) {
                     ApiResult.Ok(value, misc)
                 } else {
-                    ApiResult.Failure(errorFrom(raw, response.code))
+                    ApiResult.Failure(errorFrom(raw, response.code), gated = isGated(response.code, raw))
                 }
             }
         } catch (error: IOException) {
@@ -172,6 +176,9 @@ class CalendarApi(private val settings: Settings) {
             ApiResult.Failure(error.message ?: "Resposta inesperada do servidor.")
         }
     }
+
+    private fun isGated(status: Int, raw: String): Boolean =
+        status == 400 && raw.contains(GATE_MESSAGE)
 
     private fun errorFrom(raw: String, code: Int): String {
         val ack = runCatching { json.decodeFromString<Ack>(raw) }.getOrNull()
@@ -183,5 +190,7 @@ class CalendarApi(private val settings: Settings) {
 
     private companion object {
         const val TAG = "ChronicleApi"
+
+        const val GATE_MESSAGE = "digo inv"
     }
 }

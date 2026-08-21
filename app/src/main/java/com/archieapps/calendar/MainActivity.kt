@@ -44,6 +44,7 @@ import com.archieapps.calendar.core.sync.ReminderSync
 import com.archieapps.calendar.design.CalendarTheme
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
+import com.archieapps.calendar.feature.auth.AccessCodeSheet
 import com.archieapps.calendar.feature.auth.AccountSheet
 import com.archieapps.calendar.feature.auth.LoginScreen
 import com.archieapps.calendar.feature.auth.LoginViewModel
@@ -219,11 +220,12 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                 email = profile.second,
                 photo = photo,
                 initial = accountInitial(profile.first, profile.second),
-                privateUnlocked = state.privateUnlocked,
-                unlocking = state.unlocking,
-                unlockError = state.unlockError,
-                onUnlock = viewModel::unlockPrivate,
-                onLock = viewModel::lockPrivate,
+                unlocked = state.unlocked,
+                onAskCode = {
+                    accountOpen = false
+                    viewModel.askForCode()
+                },
+                onLock = viewModel::lock,
                 exactAlarmsAllowed = ExactAlarms.allowed(context),
                 canRequestExactAlarms = ExactAlarms.requestable(),
                 onRequestExactAlarms = { ExactAlarms.request(context) },
@@ -231,6 +233,21 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                     accountOpen = false
                     onSignedOut()
                 },
+            )
+        }
+    }
+
+    if (state.askCode) {
+        ModalBottomSheet(
+            onDismissRequest = viewModel::dismissCodePrompt,
+            sheetState = rememberModalBottomSheetState(),
+            containerColor = colors.surface,
+        ) {
+            AccessCodeSheet(
+                submitting = state.unlocking,
+                error = state.unlockError,
+                onSubmit = viewModel::submitCode,
+                onDismiss = viewModel::dismissCodePrompt,
             )
         }
     }

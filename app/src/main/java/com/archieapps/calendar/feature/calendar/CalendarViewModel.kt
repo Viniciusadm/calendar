@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.archieapps.calendar.core.net.ApiResult
 import com.archieapps.calendar.core.net.CalendarApi
 import com.archieapps.calendar.core.net.CategoryDto
-import com.archieapps.calendar.core.net.PrivateUnlock
+import com.archieapps.calendar.core.net.AccessCode
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -30,9 +30,10 @@ data class CalendarState(
     val focused: CalendarEntry? = null,
     val writeTick: Int = 0,
     val unauthorized: Boolean = false,
-    val privateUnlocked: Boolean = false,
+    val unlocked: Boolean = false,
     val unlocking: Boolean = false,
     val unlockError: String? = null,
+    val askCode: Boolean = false,
 ) {
     fun entriesOn(date: LocalDate): List<CalendarEntry> = entries[date].orEmpty()
 
@@ -61,19 +62,23 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     val state: StateFlow<CalendarState> = _state.asStateFlow()
 
     init {
-        _state.update { it.copy(privateUnlocked = PrivateUnlock.active) }
+        _state.update { it.copy(unlocked = AccessCode.present) }
         load(_state.value.month)
         loadCategories()
     }
 
-    fun unlockPrivate(pin: String) {
+    fun askForCode() = _state.update { it.copy(askCode = true, unlockError = null) }
+
+    fun dismissCodePrompt() = _state.update { it.copy(askCode = false, unlockError = null) }
+
+    fun submitCode(code: String) {
         _state.update { it.copy(unlocking = true, unlockError = null) }
 
         viewModelScope.launch {
-            when (val result = api.unlockPrivate(pin)) {
+            when (val result = api.validateCode(code)) {
                 is ApiResult.Ok -> {
-                    PrivateUnlock.grant(result.value.token, result.value.expiresAt)
-                    _state.update { it.copy(unlocking = false, privateUnlocked = true, unlockError = null) }
+                    AccessCode.remember(code)
+                    _state.update { it.copy(unlocking = false, unlocked = true, askCode = false) }
                     load(_state.value.month, force = true)
                 }
 
@@ -83,13 +88,11 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         }
     }
 
-    fun lockPrivate() {
-        PrivateUnlock.clear()
-        _state.update { it.copy(privateUnlocked = false, unlockError = null) }
+    fun lock() {
+        AccessCode.forget()
+        _state.update { it.copy(unlocked = false, unlockError = null) }
         load(_state.value.month, force = true)
     }
-
-    fun dismissUnlockError() = _state.update { it.copy(unlockError = null) }
 
     fun select(date: LocalDate) = _state.update { it.copy(selected = date) }
 
@@ -252,7 +255,12 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
 
             is ApiResult.Failure ->
                 _state.update {
-                    it.copy(saving = false, error = result.message, unauthorized = result.unauthorized)
+                    it.copy(
+                        saving = false,
+                        error = if (result.gated) null else result.message,
+                        askCode = result.gated,
+                        unauthorized = result.unauthorized,
+                    )
                 }
         }
     }
