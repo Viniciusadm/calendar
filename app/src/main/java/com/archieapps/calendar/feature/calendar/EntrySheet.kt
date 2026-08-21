@@ -84,7 +84,7 @@ private fun describe(entry: CalendarEntry): String = buildList {
     entry.clock?.let { add(it) }
     if (entry.allDay && entry.agency == Agency.Mine) add("dia inteiro")
     entry.categoryName?.let { add(it) }
-    if (entry.recurring) add("repete")
+    if (entry.recurring) add(entry.recurrenceRule?.let { Recurrence.parse(it).summary() } ?: "repete")
     if (entry.completed) add("concluído")
     entry.note?.let { add(it) }
 }.joinToString(" · ")

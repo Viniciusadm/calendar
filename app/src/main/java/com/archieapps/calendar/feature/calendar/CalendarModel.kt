@@ -6,6 +6,7 @@ import com.archieapps.calendar.design.colorFromToken
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 enum class Agency { Mine, Arrives, Happened }
@@ -41,6 +42,7 @@ data class CalendarEntry(
     val categoryName: String?,
     val note: String?,
     val recurring: Boolean,
+    val recurrenceRule: String?,
     val editable: Boolean,
 )
 
@@ -67,6 +69,7 @@ fun OccurrenceDto.toEntry(): CalendarEntry {
         categoryName = categoryName,
         note = noteFromMeta(),
         recurring = recurring,
+        recurrenceRule = meta?.get("recurrence")?.jsonPrimitive?.contentOrNull,
         editable = editable,
     )
 }
