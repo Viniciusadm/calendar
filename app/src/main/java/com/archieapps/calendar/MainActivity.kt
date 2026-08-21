@@ -171,9 +171,9 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
             MonthScreen(
                 state = state,
                 onSelect = viewModel::select,
-                onShiftMonth = viewModel::goToMonth,
+                onShowMonth = viewModel::showMonth,
                 onToday = viewModel::today,
-                onRetry = viewModel::load,
+                onRetry = viewModel::reload,
                 onOpenEntry = viewModel::focus,
                 onToggleEntry = viewModel::toggleCompletion,
                 onSignOut = onSignedOut,

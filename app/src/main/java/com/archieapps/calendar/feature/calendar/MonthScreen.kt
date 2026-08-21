@@ -38,6 +38,12 @@ import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import java.time.LocalDate
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
@@ -48,7 +54,7 @@ private val ptBr: Locale = Locale.forLanguageTag("pt-BR")
 fun MonthScreen(
     state: CalendarState,
     onSelect: (LocalDate) -> Unit,
-    onShiftMonth: (Long) -> Unit,
+    onShowMonth: (YearMonth) -> Unit,
     onToday: () -> Unit,
     onRetry: () -> Unit,
     onOpenEntry: (CalendarEntry) -> Unit,
@@ -66,17 +72,13 @@ fun MonthScreen(
     ) {
         Spacer(Modifier.height(Space.xl))
 
-        MonthHeader(
-            state = state,
-            onShiftMonth = onShiftMonth,
-            onToday = onToday,
-            onSignOut = onSignOut,
-        )
+        MonthHeader(state = state, onToday = onToday)
 
         Spacer(Modifier.height(Space.xl))
         WeekdayStrip()
         Spacer(Modifier.height(Space.sm))
-        MonthGrid(state = state, onSelect = onSelect)
+
+        MonthPager(state = state, onSelect = onSelect, onShowMonth = onShowMonth)
 
         Spacer(Modifier.height(Space.lg))
 
@@ -130,47 +132,63 @@ fun MonthScreen(
 }
 
 @Composable
-private fun MonthHeader(
-    state: CalendarState,
-    onShiftMonth: (Long) -> Unit,
-    onToday: () -> Unit,
-    onSignOut: () -> Unit,
-) {
+private fun MonthHeader(state: CalendarState, onToday: () -> Unit) {
     val colors = LocalChronicle.current
     val monthName = state.month.month.getDisplayName(JavaTextStyle.FULL, ptBr)
-    val isCurrentMonth = state.month == java.time.YearMonth.now()
+    val isCurrentMonth = state.month == YearMonth.now()
 
-    Column {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(text = monthName, style = MonthTitle, color = colors.ink)
-            Spacer(Modifier.width(Space.sm))
-            Text(
-                text = state.month.year.toString(),
-                style = MonthTitle.copy(fontSize = 22.sp, letterSpacing = (-0.6).sp),
-                color = colors.slate.copy(alpha = 0.7f),
-            )
-        }
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+        Text(text = monthName, style = MonthTitle, color = colors.ink)
+        Spacer(Modifier.width(Space.sm))
+        Text(
+            text = state.month.year.toString(),
+            style = MonthTitle.copy(fontSize = 22.sp, letterSpacing = (-0.6).sp),
+            color = colors.slate.copy(alpha = 0.7f),
+        )
 
-        Spacer(Modifier.height(Space.sm))
+        Spacer(Modifier.weight(1f))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Space.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CircleButton(glyph = "\u2039", label = "Mês anterior", onClick = { onShiftMonth(-1) })
-            CircleButton(glyph = "\u203A", label = "Mês seguinte", onClick = { onShiftMonth(1) })
-
-            Spacer(Modifier.weight(1f))
-
-            if (!isCurrentMonth) {
-                TextButton(onClick = onToday, contentPadding = PaddingValues(horizontal = Space.sm)) {
-                    Text("hoje", style = Eyebrow, color = colors.brand)
-                }
+        if (!isCurrentMonth) {
+            TextButton(onClick = onToday, contentPadding = PaddingValues(horizontal = Space.sm)) {
+                Text("hoje", style = Eyebrow, color = colors.brand)
             }
         }
     }
 }
+
+@Composable
+private fun MonthPager(
+    state: CalendarState,
+    onSelect: (LocalDate) -> Unit,
+    onShowMonth: (YearMonth) -> Unit,
+) {
+    val anchor = remember { YearMonth.now() }
+    val pagerState = rememberPagerState(initialPage = ANCHOR_PAGE, pageCount = { PAGE_COUNT })
+
+    fun monthOf(page: Int): YearMonth = anchor.plusMonths((page - ANCHOR_PAGE).toLong())
+
+    LaunchedEffect(pagerState.settledPage) {
+        onShowMonth(monthOf(pagerState.settledPage))
+    }
+
+    LaunchedEffect(state.month) {
+        val target = ANCHOR_PAGE + anchor.until(state.month, ChronoUnit.MONTHS).toInt()
+
+        if (target != pagerState.currentPage) pagerState.animateScrollToPage(target)
+    }
+
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+    ) { page ->
+        MonthGrid(month = monthOf(page), state = state, onSelect = onSelect)
+    }
+}
+
+private const val ANCHOR_PAGE = 1200
+
+private const val PAGE_COUNT = 2400
 
 
 private fun dayHeadline(date: LocalDate): String {

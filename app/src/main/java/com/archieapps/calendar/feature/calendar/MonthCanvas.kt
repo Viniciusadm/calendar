@@ -53,20 +53,20 @@ fun WeekdayStrip(modifier: Modifier = Modifier) {
 
 @Composable
 fun MonthGrid(
+    month: YearMonth,
     state: CalendarState,
     onSelect: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val today = LocalDate.now()
-    val days = state.gridDays
 
     Column(modifier = modifier.fillMaxWidth()) {
-        days.chunked(7).forEach { week ->
+        month.gridDays().chunked(7).forEach { week ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 week.forEach { day ->
                     DayCell(
                         day = day,
-                        inMonth = YearMonth.from(day) == state.month,
+                        inMonth = YearMonth.from(day) == month,
                         isToday = day == today,
                         isSelected = day == state.selected,
                         entries = state.entriesOn(day),

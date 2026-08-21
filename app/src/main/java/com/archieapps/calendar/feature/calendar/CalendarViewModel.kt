@@ -20,6 +20,7 @@ data class CalendarState(
     val selected: LocalDate = LocalDate.now(),
     val entries: Map<LocalDate, List<CalendarEntry>> = emptyMap(),
     val categories: List<CategoryDto> = emptyList(),
+    val loaded: Set<YearMonth> = emptySet(),
     val loading: Boolean = false,
     val saving: Boolean = false,
     val error: String? = null,
@@ -29,17 +30,26 @@ data class CalendarState(
     val writeTick: Int = 0,
     val unauthorized: Boolean = false,
 ) {
-    val gridStart: LocalDate
-        get() = month.atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
-
-    val gridDays: List<LocalDate>
-        get() = (0 until 42).map { gridStart.plusDays(it.toLong()) }
-
     fun entriesOn(date: LocalDate): List<CalendarEntry> = entries[date].orEmpty()
 
     val selectedEntries: List<CalendarEntry> get() = entriesOn(selected)
+}
 
-    fun categoryName(id: Int?): String? = categories.firstOrNull { it.id == id }?.name
+fun LocalDate.carriedInto(month: YearMonth): LocalDate {
+    val today = LocalDate.now()
+
+    if (month == YearMonth.from(today)) return today
+
+    return month.atDay(dayOfMonth.coerceAtMost(month.lengthOfMonth()))
+}
+
+fun YearMonth.gridStart(): LocalDate =
+    atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+
+fun YearMonth.gridDays(): List<LocalDate> {
+    val start = gridStart()
+
+    return (0 until 42).map { start.plusDays(it.toLong()) }
 }
 
 class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
@@ -47,47 +57,61 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     val state: StateFlow<CalendarState> = _state.asStateFlow()
 
     init {
-        load()
+        load(_state.value.month)
         loadCategories()
     }
 
-    fun select(date: LocalDate) {
-        val month = YearMonth.from(date)
-        val changedMonth = month != _state.value.month
+    fun select(date: LocalDate) = _state.update { it.copy(selected = date) }
 
-        _state.update { it.copy(selected = date, month = month) }
+    fun showMonth(month: YearMonth) {
+        if (_state.value.month == month) return
 
-        if (changedMonth) load()
+        _state.update { it.copy(month = month, selected = it.selected.carriedInto(month)) }
+        load(month)
     }
 
-    fun goToMonth(offset: Long) {
-        val month = _state.value.month.plusMonths(offset)
-        val selected = if (month == YearMonth.from(LocalDate.now())) LocalDate.now() else month.atDay(1)
+    fun today() {
+        val now = LocalDate.now()
 
-        _state.update { it.copy(month = month, selected = selected) }
-        load()
+        _state.update { it.copy(selected = now, month = YearMonth.from(now)) }
+        load(YearMonth.from(now))
     }
-
-    fun today() = select(LocalDate.now())
 
     fun dismissNotice() = _state.update { it.copy(notice = null) }
 
-    fun load() {
-        val start = _state.value.gridStart
-        val end = start.plusDays(41)
+    fun reload() = load(_state.value.month, force = true)
+
+    private fun load(month: YearMonth, force: Boolean = false) {
+        val window = listOf(month.minusMonths(1), month, month.plusMonths(1))
+        val missing = if (force) window else window.filterNot { _state.value.loaded.contains(it) }
+
+        if (missing.isEmpty()) return
+
+        val start = missing.minOf { it.gridStart() }
+        val end = missing.maxOf { it.gridStart().plusDays(41) }
 
         _state.update { it.copy(loading = true, error = null) }
 
         viewModelScope.launch {
             when (val result = api.occurrences(start.toString(), end.toString())) {
-                is ApiResult.Ok ->
-                    _state.update {
-                        it.copy(
-                            entries = result.value.map { dto -> dto.toEntry() }.groupBy { entry -> entry.date },
+                is ApiResult.Ok -> {
+                    val fetched = result.value.map { dto -> dto.toEntry() }.groupBy { entry -> entry.date }
+
+                    _state.update { current ->
+                        val merged = current.entries
+                            .filterKeys { it < start || it > end }
+                            .toMutableMap()
+
+                        merged.putAll(fetched)
+
+                        current.copy(
+                            entries = merged,
+                            loaded = current.loaded + missing,
                             loading = false,
                             error = null,
                         )
                     }
+                }
 
                 is ApiResult.Failure ->
                     _state.update {
@@ -150,7 +174,9 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
             val result = draft.eventId?.let { api.updateEvent(it, payload) } ?: api.createEvent(payload)
 
             finish(result, if (draft.isEditing) "Evento atualizado." else "Evento criado.") {
-                _state.update { it.copy(draft = null, selected = draft.date, month = YearMonth.from(draft.date)) }
+                _state.update {
+                    it.copy(draft = null, selected = draft.date, month = YearMonth.from(draft.date))
+                }
             }
         }
     }
@@ -161,9 +187,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         _state.update { it.copy(saving = true) }
 
         viewModelScope.launch {
-            val result = api.setCompletion(entry.id, !entry.completed)
-
-            finish(result, if (entry.completed) "Reaberto." else "Concluído.")
+            finish(api.setCompletion(entry.id, !entry.completed), if (entry.completed) "Reaberto." else "Concluído.")
         }
     }
 
@@ -193,7 +217,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
             is ApiResult.Ok -> {
                 onOk()
                 _state.update { it.copy(saving = false, notice = success, writeTick = it.writeTick + 1) }
-                load()
+                load(_state.value.month, force = true)
             }
 
             is ApiResult.Failure ->
