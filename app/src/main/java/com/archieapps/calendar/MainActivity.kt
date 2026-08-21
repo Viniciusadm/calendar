@@ -306,6 +306,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
         ) {
             EntrySheet(
                 entry = entry,
+                detail = state.focusedDetail,
                 onEdit = viewModel::editFocused,
                 onToggleCompletion = {
                     viewModel.toggleCompletion(entry)
@@ -313,7 +314,6 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                 },
                 onCancelOccurrence = viewModel::cancelFocusedOccurrence,
                 onDeleteSeries = viewModel::deleteFocusedSeries,
-                onDismiss = { viewModel.focus(null) },
             )
         }
     }

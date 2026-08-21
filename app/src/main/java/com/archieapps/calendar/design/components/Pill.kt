@@ -25,6 +25,8 @@ import com.archieapps.calendar.design.Space
 
 private val pillShape = RoundedCornerShape(percent = 50)
 
+private const val borderAlpha = 0.55f
+
 @Composable
 fun Pill(
     label: String,
@@ -35,15 +37,51 @@ fun Pill(
 ) {
     val colors = LocalChronicle.current
 
+    PillBody(
+        label = label,
+        labelColor = if (selected) colors.brand else colors.slate,
+        borderColor = if (selected) colors.brand.copy(alpha = borderAlpha) else colors.hairline,
+        background = if (selected) colors.brandSoft else Color.Transparent,
+        dot = dot,
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun Pill(
+    label: String,
+    onClick: () -> Unit,
+    tint: Color,
+    dot: Color? = null,
+    modifier: Modifier = Modifier,
+) {
+    PillBody(
+        label = label,
+        labelColor = tint,
+        borderColor = tint.copy(alpha = borderAlpha),
+        background = Color.Transparent,
+        dot = dot,
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun PillBody(
+    label: String,
+    labelColor: Color,
+    borderColor: Color,
+    background: Color,
+    dot: Color?,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
     Row(
         modifier = modifier
             .clip(pillShape)
-            .background(if (selected) colors.brandSoft else Color.Transparent)
-            .border(
-                width = 1.dp,
-                color = if (selected) colors.brand.copy(alpha = 0.55f) else colors.hairline,
-                shape = pillShape,
-            )
+            .background(background)
+            .border(width = 1.dp, color = borderColor, shape = pillShape)
             .clickable(onClick = onClick)
             .padding(horizontal = Space.md, vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -53,11 +91,7 @@ fun Pill(
             Spacer(Modifier.width(Space.sm))
         }
 
-        Text(
-            text = label,
-            style = EntryMeta,
-            color = if (selected) colors.brand else colors.slate,
-        )
+        Text(text = label, style = EntryMeta, color = labelColor)
     }
 }
 

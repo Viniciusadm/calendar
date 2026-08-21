@@ -19,6 +19,7 @@ data class ChronicleColors(
     val muted: Color,
     val brand: Color,
     val brandSoft: Color,
+    val destructive: Color,
     val isDark: Boolean,
 )
 
@@ -35,6 +36,7 @@ private val lightChronicle = ChronicleColors(
     muted = MutedLight,
     brand = Azure,
     brandSoft = Color(0x1A349EF4),
+    destructive = TokenDestructive,
     isDark = false,
 )
 
@@ -47,6 +49,7 @@ private val darkChronicle = ChronicleColors(
     muted = MutedDark,
     brand = Azure,
     brandSoft = AzureSurfaceDark,
+    destructive = TokenDestructiveDark,
     isDark = true,
 )
 

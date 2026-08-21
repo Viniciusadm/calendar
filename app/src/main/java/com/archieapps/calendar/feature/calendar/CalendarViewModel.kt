@@ -29,6 +29,7 @@ data class CalendarState(
     val notice: String? = null,
     val draft: EventDraft? = null,
     val focused: CalendarEntry? = null,
+    val focusedDetail: DetailState = DetailState.Absent,
     val writeTick: Int = 0,
     val unauthorized: Boolean = false,
     val unlocked: Boolean = false,
@@ -63,6 +64,8 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     val state: StateFlow<CalendarState> = _state.asStateFlow()
 
     private var loadJob: Job? = null
+
+    private var detailJob: Job? = null
 
     init {
         _state.update { it.copy(unlocked = AccessCode.present) }
@@ -203,20 +206,51 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         }
     }
 
-    fun focus(entry: CalendarEntry?) = _state.update { it.copy(focused = entry) }
+    fun focus(entry: CalendarEntry?) {
+        detailJob?.cancel()
+
+        val eventId = entry?.eventId
+
+        if (eventId == null) {
+            _state.update { it.copy(focused = entry, focusedDetail = DetailState.Absent) }
+
+            return
+        }
+
+        _state.update { it.copy(focused = entry, focusedDetail = DetailState.Loading) }
+
+        detailJob = viewModelScope.launch {
+            val result = api.event(eventId)
+
+            if (_state.value.focused?.eventId != eventId) return@launch
+
+            val detail = when (result) {
+                is ApiResult.Ok -> DetailState.Ready(result.value.toDetail())
+                is ApiResult.Failure -> DetailState.Absent
+            }
+
+            _state.update { it.copy(focusedDetail = detail) }
+        }
+    }
 
     fun newEvent() {
         val snapshot = _state.value
         val fallback = snapshot.categories.firstOrNull { it.isDefault }?.id
 
-        _state.update { it.copy(draft = EventDraft.forDay(snapshot.selected, fallback), focused = null) }
+        _state.update {
+            it.copy(
+                draft = EventDraft.forDay(snapshot.selected, fallback),
+                focused = null,
+                focusedDetail = DetailState.Absent,
+            )
+        }
     }
 
     fun editFocused() {
         val entry = _state.value.focused ?: return
         val eventId = entry.eventId ?: return
 
-        _state.update { it.copy(focused = null, saving = true) }
+        _state.update { it.copy(focused = null, focusedDetail = DetailState.Absent, saving = true) }
 
         viewModelScope.launch {
             when (val result = api.event(eventId)) {
@@ -266,7 +300,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     fun cancelFocusedOccurrence() {
         val entry = _state.value.focused ?: return
 
-        _state.update { it.copy(saving = true, focused = null) }
+        _state.update { it.copy(saving = true, focused = null, focusedDetail = DetailState.Absent) }
 
         viewModelScope.launch {
             finish(api.cancelOccurrence(entry.id), "Ocorrência removida.")
@@ -277,7 +311,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         val entry = _state.value.focused ?: return
         val eventId = entry.eventId ?: return
 
-        _state.update { it.copy(saving = true, focused = null) }
+        _state.update { it.copy(saving = true, focused = null, focusedDetail = DetailState.Absent) }
 
         viewModelScope.launch {
             finish(api.deleteEvent(eventId), "Evento removido.")

@@ -80,8 +80,27 @@ data class EventDto(
     val color: String? = null,
     val colorToken: String? = null,
     val recurrence: String? = null,
+    val recurrenceEndsAt: String? = null,
     val requiresCode: Boolean = false,
     val reminders: List<ReminderDto> = emptyList(),
+    val items: List<EventItemDto> = emptyList(),
+    val nextOccurrences: List<SeriesDateDto> = emptyList(),
+)
+
+@Serializable
+data class SeriesDateDto(
+    val seriesDate: String,
+    val date: String,
+    val time: String? = null,
+    val allDay: Boolean = true,
+)
+
+@Serializable
+data class EventItemDto(
+    val id: Int,
+    val title: String,
+    val durationMinutes: Int? = null,
+    val position: Int = 0,
 )
 
 @Serializable

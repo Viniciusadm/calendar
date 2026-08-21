@@ -3,6 +3,7 @@ package com.archieapps.calendar.feature.calendar
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 enum class RepeatUnit(val freq: String, val one: String, val many: String, val every: String) {
     Day("DAILY", "dia", "dias", "todo dia"),
@@ -69,6 +70,24 @@ fun ordinalLabel(position: Int): String = if (position == -1) "última" else "${
 
 fun dayLabel(date: LocalDate): String =
     "${date.dayOfMonth} de ${monthShort[date.monthValue - 1]} de ${date.year}"
+
+fun shortDate(date: LocalDate, today: LocalDate = LocalDate.now()): String {
+    val stem = "${weekdayShort(date.dayOfWeek)}, ${date.dayOfMonth} ${monthShort[date.monthValue - 1]}"
+
+    return if (date.year == today.year) stem else "$stem de ${date.year}"
+}
+
+fun relativeDays(date: LocalDate, today: LocalDate = LocalDate.now()): String {
+    val days = ChronoUnit.DAYS.between(today, date)
+
+    return when {
+        days == 0L -> "hoje"
+        days == 1L -> "amanhã"
+        days == -1L -> "ontem"
+        days > 1L -> "em $days dias"
+        else -> "há ${-days} dias"
+    }
+}
 
 data class Recurrence(
     val unit: RepeatUnit? = null,

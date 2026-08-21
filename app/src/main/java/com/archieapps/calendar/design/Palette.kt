@@ -24,6 +24,7 @@ internal val TokenAccent = Color(0xFFB37BFF)
 internal val TokenSuccess = Color(0xFF00BC7B)
 internal val TokenWarning = Color(0xFFEFA831)
 internal val TokenDestructive = Color(0xFFE62B34)
+internal val TokenDestructiveDark = Color(0xFFFF6B6B)
 internal val TokenNeutral = Color(0xFF59656E)
 
 data class PaletteToken(val token: String, val label: String, val color: Color)
