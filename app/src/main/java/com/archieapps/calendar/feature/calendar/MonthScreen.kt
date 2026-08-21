@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -27,7 +28,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
@@ -43,12 +46,11 @@ import com.archieapps.calendar.design.Stroke
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import java.time.YearMonth
-import java.time.temporal.ChronoUnit
 import java.time.LocalDate
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
+import kotlin.math.abs
 
 private val ptBr: Locale = Locale.forLanguageTag("pt-BR")
 
@@ -57,6 +59,7 @@ fun MonthScreen(
     state: CalendarState,
     onSelect: (LocalDate) -> Unit,
     onShowMonth: (YearMonth) -> Unit,
+    onPickMonth: () -> Unit,
     onToday: () -> Unit,
     onRetry: () -> Unit,
     onOpenEntry: (CalendarEntry) -> Unit,
@@ -78,6 +81,7 @@ fun MonthScreen(
 
         MonthHeader(
             state = state,
+            onPickMonth = onPickMonth,
             onToday = onToday,
             onAccount = onAccount,
             accountInitial = accountInitial,
@@ -138,6 +142,7 @@ fun MonthScreen(
 @Composable
 private fun MonthHeader(
     state: CalendarState,
+    onPickMonth: () -> Unit,
     onToday: () -> Unit,
     onAccount: () -> Unit,
     accountInitial: String,
@@ -151,13 +156,24 @@ private fun MonthHeader(
         modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = HeaderMinHeight),
         verticalAlignment = Alignment.Bottom,
     ) {
-        Text(text = monthName, style = MonthTitle, color = colors.ink)
-        Spacer(Modifier.width(Space.sm))
-        Text(
-            text = state.month.year.toString(),
-            style = MonthTitle.copy(fontSize = 22.sp, letterSpacing = (-0.6).sp),
-            color = colors.slate.copy(alpha = 0.7f),
-        )
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(Space.sm))
+                .clickable(onClick = onPickMonth)
+                .semantics { contentDescription = "Escolher mês e ano" }
+                .padding(end = Space.xs),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Text(text = monthName, style = MonthTitle, color = colors.ink)
+            Spacer(Modifier.width(Space.sm))
+            Text(
+                text = state.month.year.toString(),
+                style = MonthTitle.copy(fontSize = 22.sp, letterSpacing = (-0.6).sp),
+                color = colors.slate.copy(alpha = 0.7f),
+            )
+            Spacer(Modifier.width(Space.sm))
+            Chevron(tint = colors.slate.copy(alpha = 0.7f))
+        }
 
         Spacer(Modifier.weight(1f))
 
@@ -184,19 +200,22 @@ private fun MonthPager(
     onSelect: (LocalDate) -> Unit,
     onShowMonth: (YearMonth) -> Unit,
 ) {
-    val anchor = remember { YearMonth.now() }
-    val pagerState = rememberPagerState(initialPage = ANCHOR_PAGE, pageCount = { PAGE_COUNT })
-
-    fun monthOf(page: Int): YearMonth = anchor.plusMonths((page - ANCHOR_PAGE).toLong())
+    val pagerState = rememberPagerState(
+        initialPage = CalendarBounds.pageOf(state.month),
+        pageCount = { CalendarBounds.months },
+    )
 
     LaunchedEffect(pagerState.settledPage) {
-        onShowMonth(monthOf(pagerState.settledPage))
+        onShowMonth(CalendarBounds.monthAt(pagerState.settledPage))
     }
 
     LaunchedEffect(state.month) {
-        val target = ANCHOR_PAGE + anchor.until(state.month, ChronoUnit.MONTHS).toInt()
+        val target = CalendarBounds.pageOf(state.month)
 
-        if (target != pagerState.currentPage) pagerState.animateScrollToPage(target)
+        if (target == pagerState.currentPage) return@LaunchedEffect
+
+        if (abs(target - pagerState.currentPage) > NEARBY_PAGES) pagerState.scrollToPage(target)
+        else pagerState.animateScrollToPage(target)
     }
 
     HorizontalPager(
@@ -204,15 +223,44 @@ private fun MonthPager(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top,
     ) { page ->
-        MonthGrid(month = monthOf(page), state = state, onSelect = onSelect)
+        MonthGrid(month = CalendarBounds.monthAt(page), state = state, onSelect = onSelect)
     }
+}
+
+@Composable
+private fun Chevron(tint: Color, modifier: Modifier = Modifier) {
+    Spacer(
+        modifier = modifier
+            .padding(bottom = ChevronLift)
+            .size(width = ChevronWidth, height = ChevronHeight)
+            .drawBehind {
+                drawLine(
+                    color = tint,
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width / 2, size.height),
+                    strokeWidth = Stroke.nodeRing.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = tint,
+                    start = Offset(size.width / 2, size.height),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = Stroke.nodeRing.toPx(),
+                    cap = StrokeCap.Round,
+                )
+            }
+    )
 }
 
 private val HeaderMinHeight = 48.dp
 
-private const val ANCHOR_PAGE = 1200
+private val ChevronWidth = 11.dp
 
-private const val PAGE_COUNT = 2400
+private val ChevronHeight = 6.dp
+
+private val ChevronLift = 8.dp
+
+private const val NEARBY_PAGES = 3
 
 
 private fun dayHeadline(date: LocalDate): String {

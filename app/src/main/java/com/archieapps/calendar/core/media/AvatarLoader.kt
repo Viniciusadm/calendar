@@ -4,11 +4,10 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import com.archieapps.calendar.core.net.Http
 import java.io.File
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
 
 object AvatarLoader {
@@ -16,12 +15,7 @@ object AvatarLoader {
 
     private val cached = mutableMapOf<String, ImageBitmap>()
 
-    private val client by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .build()
-    }
+    private val client get() = Http.shared
 
     suspend fun load(context: Context, url: String?): ImageBitmap? {
         if (url.isNullOrBlank()) return null

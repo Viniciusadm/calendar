@@ -51,6 +51,7 @@ import com.archieapps.calendar.feature.auth.LoginViewModel
 import com.archieapps.calendar.feature.calendar.CalendarViewModel
 import com.archieapps.calendar.feature.calendar.EntrySheet
 import com.archieapps.calendar.feature.calendar.EventEditor
+import com.archieapps.calendar.feature.calendar.MonthPickerSheet
 import com.archieapps.calendar.feature.calendar.MonthScreen
 
 class MainActivity : ComponentActivity() {
@@ -130,23 +131,25 @@ private fun NotificationPermissionGate() {
 private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
     val colors = LocalChronicle.current
     val context = LocalContext.current
+    val api = remember(settings) { CalendarApi(settings) }
     val viewModel: CalendarViewModel = viewModel(
         key = "calendar",
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                CalendarViewModel(CalendarApi(settings)) as T
+                CalendarViewModel(api) as T
         }
     )
 
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var accountOpen by remember { mutableStateOf(false) }
+    var pickerOpen by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf(Triple(settings.userName, settings.userEmail, settings.userImage)) }
     var photo by remember { mutableStateOf<ImageBitmap?>(null) }
 
     LaunchedEffect(Unit) {
-        when (val result = CalendarApi(settings).profile()) {
+        when (val result = api.profile()) {
             is ApiResult.Ok -> {
                 result.value.name?.let { settings.userName = it }
                 result.value.email?.let { settings.userEmail = it }
@@ -169,7 +172,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
     }
 
     LaunchedEffect(state.writeTick) {
-        ReminderSync.run(context, force = state.writeTick > 0)
+        ReminderSync.enqueue(context, force = state.writeTick > 0)
     }
 
     LaunchedEffect(state.notice) {
@@ -198,6 +201,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                 state = state,
                 onSelect = viewModel::select,
                 onShowMonth = viewModel::showMonth,
+                onPickMonth = { pickerOpen = true },
                 onToday = viewModel::today,
                 onRetry = viewModel::reload,
                 onOpenEntry = viewModel::focus,
@@ -205,6 +209,22 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                 onAccount = { accountOpen = true },
                 accountInitial = accountInitial(profile.first, profile.second),
                 accountPhoto = photo,
+            )
+        }
+    }
+
+    if (pickerOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { pickerOpen = false },
+            sheetState = rememberModalBottomSheetState(),
+            containerColor = colors.surface,
+        ) {
+            MonthPickerSheet(
+                current = state.month,
+                onPick = { month ->
+                    pickerOpen = false
+                    viewModel.jumpTo(month)
+                },
             )
         }
     }

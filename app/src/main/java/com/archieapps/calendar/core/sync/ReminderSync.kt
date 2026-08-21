@@ -1,6 +1,12 @@
 package com.archieapps.calendar.core.sync
 
 import android.content.Context
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.archieapps.calendar.core.alarm.AlarmScheduler
 import com.archieapps.calendar.core.alarm.Notifications
 import com.archieapps.calendar.core.net.ApiResult
@@ -15,7 +21,25 @@ sealed interface SyncOutcome {
 }
 
 object ReminderSync {
+    const val KEY_FORCE = "force"
+
     private const val WINDOW_DAYS = 30
+
+    private const val NOW_WORK = "reminder-sync-now"
+
+    fun enqueue(context: Context, force: Boolean) {
+        val request = OneTimeWorkRequestBuilder<ReminderSyncWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .setInputData(workDataOf(KEY_FORCE to force))
+            .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(NOW_WORK, ExistingWorkPolicy.REPLACE, request)
+    }
 
     suspend fun run(context: Context, force: Boolean = false): SyncOutcome {
         val settings = Settings(context)

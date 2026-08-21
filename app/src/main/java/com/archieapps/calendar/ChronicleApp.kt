@@ -9,11 +9,18 @@ import androidx.work.WorkManager
 import com.archieapps.calendar.core.alarm.Notifications
 import com.archieapps.calendar.core.sync.ReminderSyncWorker
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class ChronicleApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        CoroutineScope(Dispatchers.IO).launch { scheduleBackgroundSync() }
+    }
+
+    private fun scheduleBackgroundSync() {
         Notifications.ensureChannel(this)
 
         val request = PeriodicWorkRequestBuilder<ReminderSyncWorker>(6, TimeUnit.HOURS)

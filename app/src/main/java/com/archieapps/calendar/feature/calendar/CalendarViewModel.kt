@@ -99,11 +99,17 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
 
     fun select(date: LocalDate) = _state.update { it.copy(selected = date) }
 
-    fun showMonth(month: YearMonth) {
-        if (_state.value.month == month) return
+    fun showMonth(month: YearMonth) = goTo(month, settle = true)
 
-        _state.update { it.copy(month = month, selected = it.selected.carriedInto(month)) }
-        ensure(month)
+    fun jumpTo(month: YearMonth) = goTo(month, settle = false)
+
+    private fun goTo(month: YearMonth, settle: Boolean) {
+        val target = CalendarBounds.clamp(month)
+
+        if (_state.value.month == target) return
+
+        _state.update { it.copy(month = target, selected = it.selected.carriedInto(target)) }
+        ensure(target, settle = settle)
     }
 
     fun today() {

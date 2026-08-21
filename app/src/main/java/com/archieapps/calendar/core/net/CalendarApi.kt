@@ -3,14 +3,12 @@ package com.archieapps.calendar.core.net
 import android.util.Log
 import com.archieapps.calendar.core.store.Settings
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -25,10 +23,7 @@ sealed interface ApiResult<out T> {
 }
 
 class CalendarApi(private val settings: Settings) {
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .build()
+    private val client = Http.shared
 
     private val json = Json {
         ignoreUnknownKeys = true
