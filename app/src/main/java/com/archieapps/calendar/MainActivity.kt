@@ -36,10 +36,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.archieapps.calendar.core.net.CalendarApi
 import com.archieapps.calendar.core.store.Settings
+import com.archieapps.calendar.core.alarm.ExactAlarms
 import com.archieapps.calendar.core.sync.ReminderSync
 import com.archieapps.calendar.design.CalendarTheme
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
+import com.archieapps.calendar.feature.auth.AccountSheet
 import com.archieapps.calendar.feature.auth.LoginScreen
 import com.archieapps.calendar.feature.auth.LoginViewModel
 import com.archieapps.calendar.feature.calendar.CalendarViewModel
@@ -135,6 +137,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
 
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
+    var accountOpen by remember { mutableStateOf(false) }
 
     NotificationPermissionGate()
 
@@ -176,7 +179,28 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                 onRetry = viewModel::reload,
                 onOpenEntry = viewModel::focus,
                 onToggleEntry = viewModel::toggleCompletion,
-                onSignOut = onSignedOut,
+                onAccount = { accountOpen = true },
+                accountInitial = accountInitial(settings.userName, settings.userEmail),
+            )
+        }
+    }
+
+    if (accountOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { accountOpen = false },
+            sheetState = rememberModalBottomSheetState(),
+            containerColor = colors.surface,
+        ) {
+            AccountSheet(
+                name = settings.userName,
+                email = settings.userEmail,
+                exactAlarmsAllowed = ExactAlarms.allowed(context),
+                canRequestExactAlarms = ExactAlarms.requestable(),
+                onRequestExactAlarms = { ExactAlarms.request(context) },
+                onSignOut = {
+                    accountOpen = false
+                    onSignedOut()
+                },
             )
         }
     }
@@ -217,4 +241,10 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
             )
         }
     }
+}
+
+private fun accountInitial(name: String?, email: String?): String {
+    val source = name?.trim()?.takeIf { it.isNotEmpty() } ?: email?.trim()
+
+    return source?.firstOrNull()?.uppercase() ?: "?"
 }

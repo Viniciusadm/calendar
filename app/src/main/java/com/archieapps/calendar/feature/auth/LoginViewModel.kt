@@ -43,6 +43,7 @@ class LoginViewModel(
                 is ApiResult.Ok -> {
                     settings.token = result.value.token
                     settings.userName = result.value.user?.name
+                    settings.userEmail = result.value.user?.email
                     _state.update { it.copy(loading = false, password = "") }
                     onAuthenticated()
                 }

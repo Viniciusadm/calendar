@@ -18,6 +18,10 @@ class Settings(context: Context) {
         get() = prefs.getString(KEY_USER, null)
         set(value) = prefs.edit().putString(KEY_USER, value).apply()
 
+    var userEmail: String?
+        get() = prefs.getString(KEY_EMAIL, null)
+        set(value) = prefs.edit().putString(KEY_EMAIL, value).apply()
+
     var revision: String?
         get() = prefs.getString(KEY_REVISION, null)
         set(value) = prefs.edit().putString(KEY_REVISION, value).apply()
@@ -28,12 +32,14 @@ class Settings(context: Context) {
     fun clearSession() = prefs.edit()
         .remove(KEY_TOKEN)
         .remove(KEY_USER)
+        .remove(KEY_EMAIL)
         .remove(KEY_REVISION)
         .apply()
 
     private companion object {
         const val KEY_TOKEN = "token"
         const val KEY_USER = "user_name"
+        const val KEY_EMAIL = "user_email"
         const val KEY_REVISION = "revision"
     }
 }

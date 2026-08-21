@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.Eyebrow
-import com.archieapps.calendar.design.components.CircleButton
+import com.archieapps.calendar.design.components.InitialButton
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.Space
@@ -59,7 +59,8 @@ fun MonthScreen(
     onRetry: () -> Unit,
     onOpenEntry: (CalendarEntry) -> Unit,
     onToggleEntry: (CalendarEntry) -> Unit,
-    onSignOut: () -> Unit,
+    onAccount: () -> Unit,
+    accountInitial: String,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
@@ -72,7 +73,7 @@ fun MonthScreen(
     ) {
         Spacer(Modifier.height(Space.xl))
 
-        MonthHeader(state = state, onToday = onToday)
+        MonthHeader(state = state, onToday = onToday, onAccount = onAccount, accountInitial = accountInitial)
 
         Spacer(Modifier.height(Space.xl))
         WeekdayStrip()
@@ -121,18 +122,17 @@ fun MonthScreen(
             onToggle = onToggleEntry,
         )
 
-        Spacer(Modifier.height(Space.xxl))
-
-        TextButton(onClick = onSignOut, contentPadding = PaddingValues(0.dp)) {
-            Text("sair da conta", style = Eyebrow, color = colors.slate.copy(alpha = 0.75f))
-        }
-
         Spacer(Modifier.height(Space.fabClearance))
     }
 }
 
 @Composable
-private fun MonthHeader(state: CalendarState, onToday: () -> Unit) {
+private fun MonthHeader(
+    state: CalendarState,
+    onToday: () -> Unit,
+    onAccount: () -> Unit,
+    accountInitial: String,
+) {
     val colors = LocalChronicle.current
     val monthName = state.month.month.getDisplayName(JavaTextStyle.FULL, ptBr)
     val isCurrentMonth = state.month == YearMonth.now()
@@ -153,6 +153,10 @@ private fun MonthHeader(state: CalendarState, onToday: () -> Unit) {
                 Text("hoje", style = Eyebrow, color = colors.brand)
             }
         }
+
+        Spacer(Modifier.width(Space.sm))
+
+        InitialButton(initial = accountInitial, label = "Sua conta", onClick = onAccount)
     }
 }
 

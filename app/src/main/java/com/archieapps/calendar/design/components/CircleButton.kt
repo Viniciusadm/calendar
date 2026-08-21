@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.SheetTitle
 
@@ -37,5 +38,27 @@ fun CircleButton(
         contentAlignment = Alignment.Center,
     ) {
         Text(glyph, style = SheetTitle.copy(fontSize = 20.sp, letterSpacing = 0.sp), color = colors.slate)
+    }
+}
+
+@Composable
+fun InitialButton(
+    initial: String,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalChronicle.current
+
+    Box(
+        modifier = modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .border(1.dp, colors.hairline, CircleShape)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(initial, style = Eyebrow, color = colors.slate)
     }
 }
