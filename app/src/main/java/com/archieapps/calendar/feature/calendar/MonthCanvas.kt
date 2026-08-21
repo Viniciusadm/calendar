@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -34,6 +35,8 @@ import java.time.YearMonth
 
 private val weekdayInitials = listOf("D", "S", "T", "Q", "Q", "S", "S")
 
+private val DayDisc = 34.dp
+
 @Composable
 fun WeekdayStrip(modifier: Modifier = Modifier) {
     val colors = LocalChronicle.current
@@ -59,6 +62,7 @@ fun MonthGrid(
     modifier: Modifier = Modifier,
 ) {
     val today = LocalDate.now()
+    val monthEntries = state.entriesFor(month)
 
     Column(modifier = modifier.fillMaxWidth()) {
         month.gridDays().chunked(7).forEach { week ->
@@ -69,7 +73,7 @@ fun MonthGrid(
                         inMonth = YearMonth.from(day) == month,
                         isToday = day == today,
                         isSelected = day == state.selected,
-                        entries = state.entriesOn(day),
+                        entries = monthEntries[day].orEmpty(),
                         onSelect = onSelect,
                         modifier = Modifier.weight(1f),
                     )
@@ -103,9 +107,12 @@ private fun DayCell(
             .padding(vertical = Space.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.defaultMinSize(minWidth = DayDisc, minHeight = DayDisc),
+            contentAlignment = Alignment.Center,
+        ) {
             val disc = Modifier
-                .size(34.dp)
+                .size(DayDisc)
                 .clip(CircleShape)
 
             when {

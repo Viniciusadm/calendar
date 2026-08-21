@@ -10,6 +10,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.TemporalAdjusters
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,9 +21,8 @@ import kotlinx.coroutines.launch
 data class CalendarState(
     val month: YearMonth = YearMonth.now(),
     val selected: LocalDate = LocalDate.now(),
-    val entries: Map<LocalDate, List<CalendarEntry>> = emptyMap(),
+    val months: Map<YearMonth, Map<LocalDate, List<CalendarEntry>>> = emptyMap(),
     val categories: List<CategoryDto> = emptyList(),
-    val loaded: Set<YearMonth> = emptySet(),
     val loading: Boolean = false,
     val saving: Boolean = false,
     val error: String? = null,
@@ -35,9 +36,9 @@ data class CalendarState(
     val unlockError: String? = null,
     val askCode: Boolean = false,
 ) {
-    fun entriesOn(date: LocalDate): List<CalendarEntry> = entries[date].orEmpty()
+    fun entriesFor(month: YearMonth): Map<LocalDate, List<CalendarEntry>> = months[month].orEmpty()
 
-    val selectedEntries: List<CalendarEntry> get() = entriesOn(selected)
+    val selectedEntries: List<CalendarEntry> get() = entriesFor(month)[selected].orEmpty()
 }
 
 fun LocalDate.carriedInto(month: YearMonth): LocalDate {
@@ -61,9 +62,11 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     private val _state = MutableStateFlow(CalendarState())
     val state: StateFlow<CalendarState> = _state.asStateFlow()
 
+    private var loadJob: Job? = null
+
     init {
         _state.update { it.copy(unlocked = AccessCode.present) }
-        load(_state.value.month)
+        ensure(_state.value.month, settle = false)
         loadCategories()
     }
 
@@ -79,7 +82,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
                 is ApiResult.Ok -> {
                     AccessCode.remember(code)
                     _state.update { it.copy(unlocking = false, unlocked = true, askCode = false) }
-                    load(_state.value.month, force = true)
+                    ensure(_state.value.month, force = true, settle = false)
                 }
 
                 is ApiResult.Failure ->
@@ -91,7 +94,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     fun lock() {
         AccessCode.forget()
         _state.update { it.copy(unlocked = false, unlockError = null) }
-        load(_state.value.month, force = true)
+        ensure(_state.value.month, force = true, settle = false)
     }
 
     fun select(date: LocalDate) = _state.update { it.copy(selected = date) }
@@ -100,56 +103,86 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         if (_state.value.month == month) return
 
         _state.update { it.copy(month = month, selected = it.selected.carriedInto(month)) }
-        load(month)
+        ensure(month)
     }
 
     fun today() {
         val now = LocalDate.now()
 
         _state.update { it.copy(selected = now, month = YearMonth.from(now)) }
-        load(YearMonth.from(now))
+        ensure(YearMonth.from(now), settle = false)
     }
 
     fun dismissNotice() = _state.update { it.copy(notice = null) }
 
-    fun reload() = load(_state.value.month, force = true)
+    fun reload() = ensure(_state.value.month, force = true, settle = false)
 
-    private fun load(month: YearMonth, force: Boolean = false) {
-        val window = listOf(month.minusMonths(1), month, month.plusMonths(1))
-        val missing = if (force) window else window.filterNot { _state.value.loaded.contains(it) }
+    private fun ensure(month: YearMonth, force: Boolean = false, settle: Boolean = true) {
+        loadJob?.cancel()
 
-        if (missing.isEmpty()) return
+        loadJob = viewModelScope.launch {
+            if (settle) delay(SETTLE_MS)
 
-        val start = missing.minOf { it.gridStart() }
-        val end = missing.maxOf { it.gridStart().plusDays(41) }
+            val range = (-PREFETCH_RADIUS..PREFETCH_RADIUS).map { month.plusMonths(it.toLong()) }
 
-        _state.update { it.copy(loading = true, error = null) }
+            _state.update { current -> current.copy(months = current.months.filterKeys { it in range }) }
 
-        viewModelScope.launch {
-            when (val result = api.occurrences(start.toString(), end.toString())) {
-                is ApiResult.Ok -> {
-                    val fetched = result.value.map { dto -> dto.toEntry() }.groupBy { entry -> entry.date }
+            if (force || !_state.value.months.containsKey(month)) {
+                if (!fetch(listOf(month), visible = true)) return@launch
+            }
 
-                    _state.update { current ->
-                        val merged = current.entries
-                            .filterKeys { it < start || it > end }
-                            .toMutableMap()
+            fetch(pending(range.filter { it > month }, force), visible = false)
+            fetch(pending(range.filter { it < month }, force), visible = false)
+        }
+    }
 
-                        merged.putAll(fetched)
+    private fun pending(months: List<YearMonth>, force: Boolean): List<YearMonth> =
+        if (force) months else months.filterNot { _state.value.months.containsKey(it) }
 
-                        current.copy(
-                            entries = merged,
-                            loaded = current.loaded + missing,
-                            loading = false,
-                            error = null,
-                        )
+    private suspend fun fetch(months: List<YearMonth>, visible: Boolean): Boolean {
+        if (months.isEmpty()) return true
+
+        val first = months.min()
+        val last = months.max()
+        val span = generateSequence(first) { previous -> previous.plusMonths(1).takeIf { it <= last } }.toList()
+        val start = first.gridStart()
+        val end = last.gridStart().plusDays(41)
+
+        if (visible) _state.update { it.copy(loading = true, error = null) }
+
+        return when (val result = api.occurrences(start.toString(), end.toString())) {
+            is ApiResult.Ok -> {
+                val byDate = result.value.map { dto -> dto.toEntry() }.groupBy { entry -> entry.date }
+
+                _state.update { current ->
+                    val cache = current.months.toMutableMap()
+
+                    span.forEach { month ->
+                        cache[month] = month.gridDays()
+                            .mapNotNull { day -> byDate[day]?.let { day to it } }
+                            .toMap()
                     }
+
+                    current.copy(
+                        months = cache,
+                        loading = if (visible) false else current.loading,
+                        error = if (visible) null else current.error,
+                    )
                 }
 
-                is ApiResult.Failure ->
-                    _state.update {
-                        it.copy(loading = false, error = result.message, unauthorized = result.unauthorized)
-                    }
+                true
+            }
+
+            is ApiResult.Failure -> {
+                _state.update {
+                    it.copy(
+                        loading = if (visible) false else it.loading,
+                        error = if (visible) result.message else it.error,
+                        unauthorized = it.unauthorized || result.unauthorized,
+                    )
+                }
+
+                false
             }
         }
     }
@@ -250,7 +283,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
             is ApiResult.Ok -> {
                 onOk()
                 _state.update { it.copy(saving = false, notice = success, writeTick = it.writeTick + 1) }
-                load(_state.value.month, force = true)
+                ensure(_state.value.month, force = true, settle = false)
             }
 
             is ApiResult.Failure ->
@@ -265,3 +298,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         }
     }
 }
+
+private const val PREFETCH_RADIUS = 2
+
+private const val SETTLE_MS = 250L
