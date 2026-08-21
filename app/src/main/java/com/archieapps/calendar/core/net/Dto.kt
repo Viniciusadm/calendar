@@ -113,6 +113,13 @@ data class SessionUser(
 )
 
 @Serializable
+data class UnlockDto(
+    val token: String,
+    val expiresAt: String? = null,
+    val ttlMinutes: Int? = null,
+)
+
+@Serializable
 data class SyncStateDto(
     val revision: String,
     val domains: Map<String, String> = emptyMap(),

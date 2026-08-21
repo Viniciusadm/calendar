@@ -14,6 +14,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.archieapps.calendar.design.components.HairlineField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -31,6 +39,11 @@ fun AccountSheet(
     email: String?,
     photo: ImageBitmap?,
     initial: String,
+    privateUnlocked: Boolean,
+    unlocking: Boolean,
+    unlockError: String?,
+    onUnlock: (String) -> Unit,
+    onLock: () -> Unit,
     exactAlarmsAllowed: Boolean,
     canRequestExactAlarms: Boolean,
     onRequestExactAlarms: () -> Unit,
@@ -62,6 +75,16 @@ fun AccountSheet(
                 }
             }
         }
+
+        Spacer(Modifier.height(Space.xl))
+
+        PrivateSection(
+            unlocked = privateUnlocked,
+            unlocking = unlocking,
+            error = unlockError,
+            onUnlock = onUnlock,
+            onLock = onLock,
+        )
 
         Spacer(Modifier.height(Space.xl))
 
@@ -101,5 +124,71 @@ fun AccountSheet(
         }
 
         Spacer(Modifier.height(Space.lg))
+    }
+}
+
+@Composable
+private fun PrivateSection(
+    unlocked: Boolean,
+    unlocking: Boolean,
+    error: String?,
+    onUnlock: (String) -> Unit,
+    onLock: () -> Unit,
+) {
+    val colors = LocalChronicle.current
+    var asking by remember { mutableStateOf(false) }
+    var pin by remember { mutableStateOf("") }
+
+    Text("itens privados", style = Eyebrow, color = colors.slate)
+    Spacer(Modifier.height(Space.sm))
+
+    if (unlocked) {
+        Text("Aniversários e marcos estão visíveis.", style = EntryMeta, color = colors.slate)
+
+        TextButton(onClick = onLock, contentPadding = PaddingValues(0.dp)) {
+            Text("Esconder de novo", style = ButtonLabel, color = colors.brand)
+        }
+
+        return
+    }
+
+    Text(
+        "Aniversários e marcos ficam escondidos até você digitar o PIN.",
+        style = EntryMeta,
+        color = colors.slate,
+    )
+
+    if (!asking) {
+        TextButton(onClick = { asking = true }, contentPadding = PaddingValues(0.dp)) {
+            Text("Mostrar itens privados", style = ButtonLabel, color = colors.brand)
+        }
+
+        return
+    }
+
+    Spacer(Modifier.height(Space.md))
+
+    HairlineField(
+        value = pin,
+        onValueChange = { value -> pin = value.filter { it.isDigit() }.take(4) },
+        label = "pin",
+        placeholder = "4 dígitos",
+        keyboardType = KeyboardType.NumberPassword,
+        imeAction = ImeAction.Done,
+        visualTransformation = PasswordVisualTransformation(),
+        onImeAction = { if (pin.length == 4) onUnlock(pin) },
+    )
+
+    if (error != null) {
+        Spacer(Modifier.height(Space.sm))
+        Text(error, style = EntryMeta, color = colors.brand)
+    }
+
+    TextButton(
+        onClick = { onUnlock(pin) },
+        enabled = pin.length == 4 && !unlocking,
+        contentPadding = PaddingValues(0.dp),
+    ) {
+        Text(if (unlocking) "Liberando…" else "Liberar", style = ButtonLabel, color = colors.brand)
     }
 }

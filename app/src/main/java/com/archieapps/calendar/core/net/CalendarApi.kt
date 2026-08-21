@@ -59,6 +59,11 @@ class CalendarApi(private val settings: Settings) {
             authenticated = false,
         ) { json.decodeFromString<Envelope<Session>>(it).let { e -> e.success to (e.body to e.misc) } }
 
+    suspend fun unlockPrivate(pin: String): ApiResult<UnlockDto> =
+        send("POST", "/api/user/private-unlock", emptyMap(), jsonOf("pin" to pin)) {
+            json.decodeFromString<Envelope<UnlockDto>>(it).let { e -> e.success to (e.body to e.misc) }
+        }
+
     suspend fun profile(): ApiResult<SessionUser> =
         send("GET", "/api/user", emptyMap()) { raw ->
             val user = runCatching { json.decodeFromString<Envelope<SessionUser>>(raw).body }.getOrNull()
@@ -136,7 +141,7 @@ class CalendarApi(private val settings: Settings) {
             .method(method, body)
             .header("Accept", "application/json")
             .apply { if (token != null) header("Authorization", "Bearer $token") }
-            .header("code", SafeCode.today())
+            .apply { PrivateUnlock.header()?.let { header(PrivateUnlock.HEADER, it) } }
             .build()
 
         try {

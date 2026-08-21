@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.archieapps.calendar.core.net.ApiResult
 import com.archieapps.calendar.core.net.CalendarApi
 import com.archieapps.calendar.core.net.CategoryDto
+import com.archieapps.calendar.core.net.PrivateUnlock
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -29,6 +30,9 @@ data class CalendarState(
     val focused: CalendarEntry? = null,
     val writeTick: Int = 0,
     val unauthorized: Boolean = false,
+    val privateUnlocked: Boolean = false,
+    val unlocking: Boolean = false,
+    val unlockError: String? = null,
 ) {
     fun entriesOn(date: LocalDate): List<CalendarEntry> = entries[date].orEmpty()
 
@@ -57,9 +61,35 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     val state: StateFlow<CalendarState> = _state.asStateFlow()
 
     init {
+        _state.update { it.copy(privateUnlocked = PrivateUnlock.active) }
         load(_state.value.month)
         loadCategories()
     }
+
+    fun unlockPrivate(pin: String) {
+        _state.update { it.copy(unlocking = true, unlockError = null) }
+
+        viewModelScope.launch {
+            when (val result = api.unlockPrivate(pin)) {
+                is ApiResult.Ok -> {
+                    PrivateUnlock.grant(result.value.token, result.value.expiresAt)
+                    _state.update { it.copy(unlocking = false, privateUnlocked = true, unlockError = null) }
+                    load(_state.value.month, force = true)
+                }
+
+                is ApiResult.Failure ->
+                    _state.update { it.copy(unlocking = false, unlockError = result.message) }
+            }
+        }
+    }
+
+    fun lockPrivate() {
+        PrivateUnlock.clear()
+        _state.update { it.copy(privateUnlocked = false, unlockError = null) }
+        load(_state.value.month, force = true)
+    }
+
+    fun dismissUnlockError() = _state.update { it.copy(unlockError = null) }
 
     fun select(date: LocalDate) = _state.update { it.copy(selected = date) }
 
