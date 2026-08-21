@@ -1,5 +1,10 @@
 package com.archieapps.calendar.feature.auth
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.ImageBitmap
+import com.archieapps.calendar.design.components.Avatar
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +29,8 @@ import com.archieapps.calendar.design.Space
 fun AccountSheet(
     name: String?,
     email: String?,
+    photo: ImageBitmap?,
+    initial: String,
     exactAlarmsAllowed: Boolean,
     canRequestExactAlarms: Boolean,
     onRequestExactAlarms: () -> Unit,
@@ -39,12 +46,21 @@ fun AccountSheet(
             .padding(horizontal = Space.lg),
     ) {
         Text("conta", style = Eyebrow, color = colors.slate)
-        Spacer(Modifier.height(Space.sm))
-        Text(name ?: "Você", style = SheetTitle, color = colors.ink)
+        Spacer(Modifier.height(Space.md))
 
-        if (email != null) {
-            Spacer(Modifier.height(Space.xxs))
-            Text(email, style = EntryMeta, color = colors.slate)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Avatar(initial = initial, label = "Sua foto", photo = photo, diameter = 56)
+
+            Spacer(Modifier.width(Space.md))
+
+            Column {
+                Text(name ?: "Você", style = SheetTitle, color = colors.ink)
+
+                if (email != null) {
+                    Spacer(Modifier.height(Space.xxs))
+                    Text(email, style = EntryMeta, color = colors.slate)
+                }
+            }
         }
 
         Spacer(Modifier.height(Space.xl))

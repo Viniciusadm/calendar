@@ -22,6 +22,10 @@ class Settings(context: Context) {
         get() = prefs.getString(KEY_EMAIL, null)
         set(value) = prefs.edit().putString(KEY_EMAIL, value).apply()
 
+    var userImage: String?
+        get() = prefs.getString(KEY_IMAGE, null)?.takeIf { it.isNotBlank() }
+        set(value) = prefs.edit().putString(KEY_IMAGE, value?.takeIf { it.isNotBlank() }).apply()
+
     var revision: String?
         get() = prefs.getString(KEY_REVISION, null)
         set(value) = prefs.edit().putString(KEY_REVISION, value).apply()
@@ -33,6 +37,7 @@ class Settings(context: Context) {
         .remove(KEY_TOKEN)
         .remove(KEY_USER)
         .remove(KEY_EMAIL)
+        .remove(KEY_IMAGE)
         .remove(KEY_REVISION)
         .apply()
 
@@ -40,6 +45,7 @@ class Settings(context: Context) {
         const val KEY_TOKEN = "token"
         const val KEY_USER = "user_name"
         const val KEY_EMAIL = "user_email"
+        const val KEY_IMAGE = "user_image"
         const val KEY_REVISION = "revision"
     }
 }

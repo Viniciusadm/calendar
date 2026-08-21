@@ -1,5 +1,9 @@
 package com.archieapps.calendar.design.components
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -42,23 +46,34 @@ fun CircleButton(
 }
 
 @Composable
-fun InitialButton(
+fun Avatar(
     initial: String,
     label: String,
-    onClick: () -> Unit,
+    photo: ImageBitmap?,
     modifier: Modifier = Modifier,
+    diameter: Int = 36,
+    onClick: (() -> Unit)? = null,
 ) {
     val colors = LocalChronicle.current
 
     Box(
         modifier = modifier
-            .size(36.dp)
+            .size(diameter.dp)
             .clip(CircleShape)
             .border(1.dp, colors.hairline, CircleShape)
-            .clickable(onClick = onClick)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        Text(initial, style = Eyebrow, color = colors.slate)
+        if (photo != null) {
+            Image(
+                bitmap = photo,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Text(initial, style = Eyebrow, color = colors.slate)
+        }
     }
 }

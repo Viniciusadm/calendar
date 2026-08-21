@@ -44,6 +44,7 @@ class LoginViewModel(
                     settings.token = result.value.token
                     settings.userName = result.value.user?.name
                     settings.userEmail = result.value.user?.email
+                    settings.userImage = result.value.user?.image
                     _state.update { it.copy(loading = false, password = "") }
                     onAuthenticated()
                 }

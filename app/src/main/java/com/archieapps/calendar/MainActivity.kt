@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
@@ -37,6 +38,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.archieapps.calendar.core.net.CalendarApi
 import com.archieapps.calendar.core.store.Settings
 import com.archieapps.calendar.core.alarm.ExactAlarms
+import com.archieapps.calendar.core.media.AvatarLoader
+import com.archieapps.calendar.core.net.ApiResult
 import com.archieapps.calendar.core.sync.ReminderSync
 import com.archieapps.calendar.design.CalendarTheme
 import com.archieapps.calendar.design.Eyebrow
@@ -138,6 +141,25 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var accountOpen by remember { mutableStateOf(false) }
+    var profile by remember { mutableStateOf(Triple(settings.userName, settings.userEmail, settings.userImage)) }
+    var photo by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    LaunchedEffect(Unit) {
+        when (val result = CalendarApi(settings).profile()) {
+            is ApiResult.Ok -> {
+                result.value.name?.let { settings.userName = it }
+                result.value.email?.let { settings.userEmail = it }
+                result.value.image?.let { settings.userImage = it }
+                profile = Triple(settings.userName, settings.userEmail, settings.userImage)
+            }
+
+            is ApiResult.Failure -> Unit
+        }
+    }
+
+    LaunchedEffect(profile.third) {
+        photo = AvatarLoader.load(context, profile.third)
+    }
 
     NotificationPermissionGate()
 
@@ -180,7 +202,8 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                 onOpenEntry = viewModel::focus,
                 onToggleEntry = viewModel::toggleCompletion,
                 onAccount = { accountOpen = true },
-                accountInitial = accountInitial(settings.userName, settings.userEmail),
+                accountInitial = accountInitial(profile.first, profile.second),
+                accountPhoto = photo,
             )
         }
     }
@@ -192,8 +215,10 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
             containerColor = colors.surface,
         ) {
             AccountSheet(
-                name = settings.userName,
-                email = settings.userEmail,
+                name = profile.first,
+                email = profile.second,
+                photo = photo,
+                initial = accountInitial(profile.first, profile.second),
                 exactAlarmsAllowed = ExactAlarms.allowed(context),
                 canRequestExactAlarms = ExactAlarms.requestable(),
                 onRequestExactAlarms = { ExactAlarms.request(context) },

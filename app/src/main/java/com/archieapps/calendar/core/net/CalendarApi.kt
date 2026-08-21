@@ -1,5 +1,6 @@
 package com.archieapps.calendar.core.net
 
+import android.util.Log
 import com.archieapps.calendar.core.store.Settings
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -57,6 +58,14 @@ class CalendarApi(private val settings: Settings) {
             payload = jsonOf("email" to email.trim(), "password" to password),
             authenticated = false,
         ) { json.decodeFromString<Envelope<Session>>(it).let { e -> e.success to (e.body to e.misc) } }
+
+    suspend fun profile(): ApiResult<SessionUser> =
+        send("GET", "/api/user", emptyMap()) { raw ->
+            val user = runCatching { json.decodeFromString<Envelope<SessionUser>>(raw).body }.getOrNull()
+                ?: runCatching { json.decodeFromString<SessionUser>(raw) }.getOrNull()
+
+            (user?.id != null) to (user to null)
+        }
 
     suspend fun syncState(): ApiResult<SyncStateDto> =
         send("GET", "/api/calendar/sync/state", emptyMap()) {
@@ -154,6 +163,7 @@ class CalendarApi(private val settings: Settings) {
         } catch (error: IOException) {
             ApiResult.Failure("Sem conexão com o servidor.")
         } catch (error: Exception) {
+            Log.w(TAG, "falha em $method $path", error)
             ApiResult.Failure(error.message ?: "Resposta inesperada do servidor.")
         }
     }
@@ -161,6 +171,12 @@ class CalendarApi(private val settings: Settings) {
     private fun errorFrom(raw: String, code: Int): String {
         val ack = runCatching { json.decodeFromString<Ack>(raw) }.getOrNull()
 
+        Log.w(TAG, "resposta inesperada ($code): ${raw.take(240)}")
+
         return ack?.error ?: ack?.message ?: "Falha na requisição ($code)."
+    }
+
+    private companion object {
+        const val TAG = "ChronicleApi"
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
@@ -33,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.Eyebrow
-import com.archieapps.calendar.design.components.InitialButton
+import com.archieapps.calendar.design.components.Avatar
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.Space
@@ -61,6 +62,7 @@ fun MonthScreen(
     onToggleEntry: (CalendarEntry) -> Unit,
     onAccount: () -> Unit,
     accountInitial: String,
+    accountPhoto: ImageBitmap?,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
@@ -73,7 +75,13 @@ fun MonthScreen(
     ) {
         Spacer(Modifier.height(Space.xl))
 
-        MonthHeader(state = state, onToday = onToday, onAccount = onAccount, accountInitial = accountInitial)
+        MonthHeader(
+            state = state,
+            onToday = onToday,
+            onAccount = onAccount,
+            accountInitial = accountInitial,
+            accountPhoto = accountPhoto,
+        )
 
         Spacer(Modifier.height(Space.xl))
         WeekdayStrip()
@@ -132,6 +140,7 @@ private fun MonthHeader(
     onToday: () -> Unit,
     onAccount: () -> Unit,
     accountInitial: String,
+    accountPhoto: ImageBitmap?,
 ) {
     val colors = LocalChronicle.current
     val monthName = state.month.month.getDisplayName(JavaTextStyle.FULL, ptBr)
@@ -156,7 +165,12 @@ private fun MonthHeader(
 
         Spacer(Modifier.width(Space.sm))
 
-        InitialButton(initial = accountInitial, label = "Sua conta", onClick = onAccount)
+        Avatar(
+            initial = accountInitial,
+            label = "Sua conta",
+            photo = accountPhoto,
+            onClick = onAccount,
+        )
     }
 }
 
