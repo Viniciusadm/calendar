@@ -35,8 +35,11 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("debug")
+            isProfileable = true
+            proguardFiles("proguard-rules.pro")
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
