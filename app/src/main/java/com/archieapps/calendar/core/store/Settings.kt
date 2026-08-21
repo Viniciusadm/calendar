@@ -8,25 +8,32 @@ class Settings(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("chronicle", Context.MODE_PRIVATE)
 
-    var baseUrl: String
-        get() = (prefs.getString(KEY_BASE_URL, null)?.takeIf { it.isNotBlank() } ?: DEFAULT_BASE_URL).trimEnd('/')
-        set(value) = prefs.edit().putString(KEY_BASE_URL, value.trim().trimEnd('/')).apply()
+    val baseUrl: String = BuildConfig.BASE_URL.trimEnd('/')
 
     var token: String?
-        get() = prefs.getString(KEY_TOKEN, null)
+        get() = prefs.getString(KEY_TOKEN, null)?.takeIf { it.isNotBlank() }
         set(value) = prefs.edit().putString(KEY_TOKEN, value).apply()
+
+    var userName: String?
+        get() = prefs.getString(KEY_USER, null)
+        set(value) = prefs.edit().putString(KEY_USER, value).apply()
 
     var revision: String?
         get() = prefs.getString(KEY_REVISION, null)
         set(value) = prefs.edit().putString(KEY_REVISION, value).apply()
 
-    val isConfigured: Boolean
-        get() = !token.isNullOrBlank()
+    val isLoggedIn: Boolean
+        get() = token != null
 
-    companion object {
-        private const val KEY_BASE_URL = "base_url"
-        private const val KEY_TOKEN = "token"
-        private const val KEY_REVISION = "revision"
-        val DEFAULT_BASE_URL: String = BuildConfig.BASE_URL.trimEnd('/')
+    fun clearSession() = prefs.edit()
+        .remove(KEY_TOKEN)
+        .remove(KEY_USER)
+        .remove(KEY_REVISION)
+        .apply()
+
+    private companion object {
+        const val KEY_TOKEN = "token"
+        const val KEY_USER = "user_name"
+        const val KEY_REVISION = "revision"
     }
 }

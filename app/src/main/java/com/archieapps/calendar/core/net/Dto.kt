@@ -95,6 +95,23 @@ data class ReminderDto(
 )
 
 @Serializable
+data class LoginRequest(val email: String, val password: String)
+
+@Serializable
+data class Session(
+    val user: SessionUser? = null,
+    val token: String,
+    val type: String = "Bearer",
+)
+
+@Serializable
+data class SessionUser(
+    val id: Int? = null,
+    val name: String? = null,
+    val email: String? = null,
+)
+
+@Serializable
 data class SyncStateDto(
     val revision: String,
     val domains: Map<String, String> = emptyMap(),

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -13,9 +14,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.design.EntryMeta
+import com.archieapps.calendar.design.ButtonLabel
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
-import com.archieapps.calendar.design.MonthTitle
+import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 
 @Composable
@@ -30,8 +32,8 @@ fun EntrySheet(
 ) {
     val colors = LocalChronicle.current
 
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = Space.lg)) {
-        Text(entry.title, style = MonthTitle.copy(fontSize = 24.sp, letterSpacing = (-0.8).sp), color = colors.ink)
+    Column(modifier = modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Space.lg)) {
+        Text(entry.title, style = SheetTitle, color = colors.ink)
 
         Spacer(Modifier.height(Space.sm))
 
@@ -80,12 +82,13 @@ fun EntrySheet(
 @Composable
 private fun Action(label: String, color: Color, onClick: () -> Unit) {
     TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Text(label, style = Eyebrow, color = color, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
+        Text(label, style = ButtonLabel, color = color, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
     }
 }
 
 private fun describe(entry: CalendarEntry): String = buildList {
-    if (entry.allDay) add("dia inteiro") else entry.clock?.let { add(it) }
+    entry.clock?.let { add(it) }
+    if (entry.allDay && entry.agency == Agency.Mine) add("dia inteiro")
     entry.categoryName?.let { add(it) }
     if (entry.recurring) add("repete")
     if (entry.completed) add("concluído")

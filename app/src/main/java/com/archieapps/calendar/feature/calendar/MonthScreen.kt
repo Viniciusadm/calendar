@@ -1,5 +1,14 @@
 package com.archieapps.calendar.feature.calendar
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.Eyebrow
+import com.archieapps.calendar.design.components.CircleButton
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.Space
@@ -43,6 +53,7 @@ fun MonthScreen(
     onRetry: () -> Unit,
     onOpenEntry: (CalendarEntry) -> Unit,
     onToggleEntry: (CalendarEntry) -> Unit,
+    onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
@@ -59,6 +70,7 @@ fun MonthScreen(
             state = state,
             onShiftMonth = onShiftMonth,
             onToday = onToday,
+            onSignOut = onSignOut,
         )
 
         Spacer(Modifier.height(Space.xl))
@@ -107,7 +119,13 @@ fun MonthScreen(
             onToggle = onToggleEntry,
         )
 
-        Spacer(Modifier.height(Space.huge))
+        Spacer(Modifier.height(Space.xxl))
+
+        TextButton(onClick = onSignOut, contentPadding = PaddingValues(0.dp)) {
+            Text("sair da conta", style = Eyebrow, color = colors.slate.copy(alpha = 0.75f))
+        }
+
+        Spacer(Modifier.height(Space.fabClearance))
     }
 }
 
@@ -116,6 +134,7 @@ private fun MonthHeader(
     state: CalendarState,
     onShiftMonth: (Long) -> Unit,
     onToday: () -> Unit,
+    onSignOut: () -> Unit,
 ) {
     val colors = LocalChronicle.current
     val monthName = state.month.month.getDisplayName(JavaTextStyle.FULL, ptBr)
@@ -136,16 +155,16 @@ private fun MonthHeader(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Space.lg),
+            horizontalArrangement = Arrangement.spacedBy(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MonthNav(label = "anterior", onClick = { onShiftMonth(-1) })
-            MonthNav(label = "próximo", onClick = { onShiftMonth(1) })
+            CircleButton(glyph = "\u2039", label = "Mês anterior", onClick = { onShiftMonth(-1) })
+            CircleButton(glyph = "\u203A", label = "Mês seguinte", onClick = { onShiftMonth(1) })
 
             Spacer(Modifier.weight(1f))
 
             if (!isCurrentMonth) {
-                TextButton(onClick = onToday, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                TextButton(onClick = onToday, contentPadding = PaddingValues(horizontal = Space.sm)) {
                     Text("hoje", style = Eyebrow, color = colors.brand)
                 }
             }
@@ -153,14 +172,6 @@ private fun MonthHeader(
     }
 }
 
-@Composable
-private fun MonthNav(label: String, onClick: () -> Unit) {
-    val colors = LocalChronicle.current
-
-    TextButton(onClick = onClick, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-        Text(label, style = Eyebrow, color = colors.slate, fontWeight = FontWeight.Medium)
-    }
-}
 
 private fun dayHeadline(date: LocalDate): String {
     val weekday = date.dayOfWeek.getDisplayName(JavaTextStyle.FULL, ptBr)

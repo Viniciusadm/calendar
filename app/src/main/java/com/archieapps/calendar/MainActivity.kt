@@ -1,13 +1,14 @@
 package com.archieapps.calendar
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
@@ -38,12 +40,12 @@ import com.archieapps.calendar.core.sync.ReminderSync
 import com.archieapps.calendar.design.CalendarTheme
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
+import com.archieapps.calendar.feature.auth.LoginScreen
+import com.archieapps.calendar.feature.auth.LoginViewModel
 import com.archieapps.calendar.feature.calendar.CalendarViewModel
 import com.archieapps.calendar.feature.calendar.EntrySheet
 import com.archieapps.calendar.feature.calendar.EventEditor
 import com.archieapps.calendar.feature.calendar.MonthScreen
-import com.archieapps.calendar.feature.calendar.SetupScreen
-import android.content.pm.PackageManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,38 +53,55 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CalendarTheme {
-                CalendarApp()
+                Root()
             }
         }
     }
 }
 
 @Composable
-private fun CalendarApp() {
+private fun Root() {
     val context = LocalContext.current
     val settings = remember { Settings(context) }
-    var configured by remember { mutableStateOf(settings.isConfigured) }
+    val colors = LocalChronicle.current
+    var loggedIn by remember { mutableStateOf(settings.isLoggedIn) }
 
-    if (!configured) {
-        val colors = LocalChronicle.current
-
-        Scaffold(modifier = Modifier.fillMaxSize(), containerColor = colors.ground) { insets ->
-            Box(Modifier.padding(insets)) {
-                SetupScreen(
-                    initialBaseUrl = settings.baseUrl,
-                    onSave = { baseUrl, token ->
-                        settings.baseUrl = baseUrl
-                        settings.token = token
-                        configured = true
+    Scaffold(modifier = Modifier.fillMaxSize(), containerColor = colors.ground) { insets ->
+        Box(Modifier.padding(insets)) {
+            if (loggedIn) {
+                Chronicle(
+                    settings = settings,
+                    onSignedOut = {
+                        settings.clearSession()
+                        loggedIn = false
                     },
                 )
+            } else {
+                Login(settings = settings, onAuthenticated = { loggedIn = true })
             }
         }
-
-        return
     }
+}
 
-    Chronicle(settings)
+@Composable
+private fun Login(settings: Settings, onAuthenticated: () -> Unit) {
+    val viewModel: LoginViewModel = viewModel(
+        key = "login",
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                LoginViewModel(CalendarApi(settings), settings, onAuthenticated) as T
+        }
+    )
+
+    val state by viewModel.state.collectAsState()
+
+    LoginScreen(
+        state = state,
+        onEmail = viewModel::onEmail,
+        onPassword = viewModel::onPassword,
+        onSubmit = viewModel::submit,
+    )
 }
 
 @Composable
@@ -102,9 +121,11 @@ private fun NotificationPermissionGate() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Chronicle(settings: Settings) {
+private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
     val colors = LocalChronicle.current
+    val context = LocalContext.current
     val viewModel: CalendarViewModel = viewModel(
+        key = "calendar",
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
@@ -114,9 +135,12 @@ private fun Chronicle(settings: Settings) {
 
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
-    val context = LocalContext.current
 
     NotificationPermissionGate()
+
+    LaunchedEffect(state.unauthorized) {
+        if (state.unauthorized) onSignedOut()
+    }
 
     LaunchedEffect(state.writeTick) {
         ReminderSync.run(context, force = state.writeTick > 0)
@@ -137,7 +161,7 @@ private fun Chronicle(settings: Settings) {
             FloatingActionButton(
                 onClick = viewModel::newEvent,
                 containerColor = colors.brand,
-                contentColor = if (colors.isDark) colors.ground else androidx.compose.ui.graphics.Color.White,
+                contentColor = if (colors.isDark) colors.ground else Color.White,
             ) {
                 Text("+", style = Eyebrow)
             }
@@ -152,6 +176,7 @@ private fun Chronicle(settings: Settings) {
                 onRetry = viewModel::load,
                 onOpenEntry = viewModel::focus,
                 onToggleEntry = viewModel::toggleCompletion,
+                onSignOut = onSignedOut,
             )
         }
     }

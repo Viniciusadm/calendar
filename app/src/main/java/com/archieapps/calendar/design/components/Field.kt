@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
@@ -18,7 +19,9 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.Space
@@ -32,6 +35,9 @@ fun HairlineField(
     placeholder: String = "",
     textStyle: TextStyle = Eyebrow,
     keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction = ImeAction.Next,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    onImeAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
@@ -51,7 +57,9 @@ fun HairlineField(
                 singleLine = true,
                 textStyle = textStyle.copy(color = colors.ink),
                 cursorBrush = SolidColor(colors.brand),
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+                keyboardActions = KeyboardActions(onDone = { onImeAction?.invoke() }, onGo = { onImeAction?.invoke() }),
+                visualTransformation = visualTransformation,
                 modifier = Modifier
                     .fillMaxWidth()
                     .drawBehind {

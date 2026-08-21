@@ -16,7 +16,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 sealed interface ApiResult<out T> {
     data class Ok<T>(val value: T, val misc: FeedMisc? = null) : ApiResult<T>
-    data class Failure(val message: String) : ApiResult<Nothing>
+    data class Failure(val message: String, val unauthorized: Boolean = false) : ApiResult<Nothing>
 }
 
 class CalendarApi(private val settings: Settings) {
@@ -48,6 +48,15 @@ class CalendarApi(private val settings: Settings) {
         send("GET", "/api/calendar/events/$id", emptyMap()) {
             json.decodeFromString<Envelope<EventDto>>(it).let { e -> e.success to (e.body to e.misc) }
         }
+
+    suspend fun login(email: String, password: String): ApiResult<Session> =
+        send(
+            method = "POST",
+            path = "/api/auth/login",
+            query = emptyMap(),
+            payload = jsonOf("email" to email.trim(), "password" to password),
+            authenticated = false,
+        ) { json.decodeFromString<Envelope<Session>>(it).let { e -> e.success to (e.body to e.misc) } }
 
     suspend fun syncState(): ApiResult<SyncStateDto> =
         send("GET", "/api/calendar/sync/state", emptyMap()) {
@@ -91,10 +100,14 @@ class CalendarApi(private val settings: Settings) {
         path: String,
         query: Map<String, String>,
         payload: JsonObject? = null,
+        authenticated: Boolean = true,
         decode: (String) -> Pair<Boolean, Pair<T?, FeedMisc?>>,
     ): ApiResult<T> = withContext(Dispatchers.IO) {
         val token = settings.token
-        if (token.isNullOrBlank()) return@withContext ApiResult.Failure("Configure o token de acesso.")
+
+        if (authenticated && token == null) {
+            return@withContext ApiResult.Failure("Sessão expirada. Entre de novo.", unauthorized = true)
+        }
 
         val base = (settings.baseUrl + path).toHttpUrlOrNull()
             ?: return@withContext ApiResult.Failure("Endereço do servidor inválido.")
@@ -113,13 +126,17 @@ class CalendarApi(private val settings: Settings) {
             .url(url)
             .method(method, body)
             .header("Accept", "application/json")
-            .header("Authorization", "Bearer $token")
+            .apply { if (token != null) header("Authorization", "Bearer $token") }
             .header("code", SafeCode.today())
             .build()
 
         try {
             client.newCall(request).execute().use { response ->
                 val raw = response.body?.string().orEmpty()
+
+                if (response.code == 401) {
+                    return@use ApiResult.Failure("Sessão expirada. Entre de novo.", unauthorized = true)
+                }
 
                 if (raw.isBlank()) {
                     return@use ApiResult.Failure("O servidor respondeu vazio (${response.code}).")

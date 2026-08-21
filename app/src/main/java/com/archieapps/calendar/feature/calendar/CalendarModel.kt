@@ -58,7 +58,6 @@ private fun OccurrenceDto.noteFromMeta(): String? {
     val meta = meta ?: return null
 
     meta["age"]?.let { return "faz ${it.jsonPrimitive.content} anos" }
-    meta["series"]?.let { return it.jsonPrimitive.content }
 
     return null
 }

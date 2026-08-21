@@ -27,6 +27,7 @@ data class CalendarState(
     val draft: EventDraft? = null,
     val focused: CalendarEntry? = null,
     val writeTick: Int = 0,
+    val unauthorized: Boolean = false,
 ) {
     val gridStart: LocalDate
         get() = month.atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
@@ -89,7 +90,9 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
                     }
 
                 is ApiResult.Failure ->
-                    _state.update { it.copy(loading = false, error = result.message) }
+                    _state.update {
+                        it.copy(loading = false, error = result.message, unauthorized = result.unauthorized)
+                    }
             }
         }
     }
@@ -194,7 +197,9 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
             }
 
             is ApiResult.Failure ->
-                _state.update { it.copy(saving = false, error = result.message) }
+                _state.update {
+                    it.copy(saving = false, error = result.message, unauthorized = result.unauthorized)
+                }
         }
     }
 }

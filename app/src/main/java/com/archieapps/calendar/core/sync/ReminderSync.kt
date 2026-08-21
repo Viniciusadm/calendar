@@ -20,7 +20,7 @@ object ReminderSync {
     suspend fun run(context: Context, force: Boolean = false): SyncOutcome {
         val settings = Settings(context)
 
-        if (!settings.isConfigured) return SyncOutcome.Unchanged
+        if (!settings.isLoggedIn) return SyncOutcome.Unchanged
 
         val api = CalendarApi(settings)
 

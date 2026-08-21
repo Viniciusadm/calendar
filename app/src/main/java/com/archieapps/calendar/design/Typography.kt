@@ -45,6 +45,22 @@ val Eyebrow = TextStyle(
     letterSpacing = 1.8.sp,
 )
 
+val SheetTitle = TextStyle(
+    fontFamily = Sans,
+    fontWeight = FontWeight.Light,
+    fontSize = 24.sp,
+    lineHeight = 29.sp,
+    letterSpacing = (-0.7).sp,
+)
+
+val ButtonLabel = TextStyle(
+    fontFamily = Sans,
+    fontWeight = FontWeight.Medium,
+    fontSize = 15.sp,
+    lineHeight = 20.sp,
+    letterSpacing = 0.2.sp,
+)
+
 val EntryTitle = TextStyle(
     fontFamily = Sans,
     fontWeight = FontWeight.Normal,

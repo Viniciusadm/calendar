@@ -11,6 +11,7 @@ object Space {
     val xl = 24.dp
     val xxl = 32.dp
     val huge = 48.dp
+    val fabClearance = 96.dp
 }
 
 object Stroke {

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
@@ -21,11 +23,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.core.net.CategoryDto
 import com.archieapps.calendar.design.EntryMeta
+import com.archieapps.calendar.design.ButtonLabel
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
+import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.colorFromToken
+import com.archieapps.calendar.design.components.CircleButton
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
 import com.archieapps.calendar.design.components.PillRow
@@ -53,6 +58,8 @@ fun EventEditor(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
+            .navigationBarsPadding()
+            .imePadding()
             .padding(horizontal = Space.lg),
     ) {
         Text(
@@ -68,7 +75,7 @@ fun EventEditor(
             onValueChange = { value -> onChange { it.copy(title = value) } },
             label = "o quê",
             placeholder = "Pilates, consulta, aniversário…",
-            textStyle = MonthTitle.copy(fontSize = 22.sp, letterSpacing = (-0.6).sp),
+            textStyle = SheetTitle,
         )
 
         Spacer(Modifier.height(Space.xl))
@@ -155,11 +162,11 @@ fun EventEditor(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = colors.brand),
         ) {
-            Text(if (saving) "Salvando…" else "Salvar", style = Eyebrow)
+            Text(if (saving) "Salvando…" else "Salvar", style = ButtonLabel)
         }
 
         TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
-            Text("Cancelar", style = Eyebrow, color = colors.slate)
+            Text("Cancelar", style = ButtonLabel, color = colors.slate)
         }
 
         Spacer(Modifier.height(Space.xl))
@@ -193,20 +200,18 @@ private fun DateRow(date: LocalDate, onShift: (Long) -> Unit) {
     val weekday = date.dayOfWeek.getDisplayName(JavaTextStyle.SHORT, ptBr)
     val month = date.month.getDisplayName(JavaTextStyle.FULL, ptBr)
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        TextButton(onClick = { onShift(-1) }) {
-            Text("−1 dia", style = Eyebrow, color = colors.slate)
-        }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.md),
+    ) {
+        CircleButton(glyph = "\u2212", label = "Um dia antes", onClick = { onShift(-1) }, diameter = 36)
 
         Text(
             text = "$weekday, ${date.dayOfMonth} de $month",
             style = EntryMeta,
             color = colors.ink,
-            modifier = Modifier.padding(horizontal = Space.sm),
         )
 
-        TextButton(onClick = { onShift(1) }) {
-            Text("+1 dia", style = Eyebrow, color = colors.slate)
-        }
+        CircleButton(glyph = "+", label = "Um dia depois", onClick = { onShift(1) }, diameter = 36)
     }
 }

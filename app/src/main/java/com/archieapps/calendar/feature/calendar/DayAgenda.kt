@@ -135,7 +135,7 @@ private fun SpineEntry(
 
             val meta = buildList {
                 entry.clock?.let { add(it) }
-                if (entry.allDay && entry.agency != Agency.Happened) add("dia inteiro")
+                if (entry.allDay && entry.agency == Agency.Mine) add("dia inteiro")
                 if (entry.agency == Agency.Happened) add("marco")
                 entry.note?.let { add(it) }
                 entry.categoryName?.let { add(it) }
