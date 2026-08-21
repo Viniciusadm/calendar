@@ -7,6 +7,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.putJsonArray
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
@@ -39,8 +42,14 @@ class CalendarApi(private val settings: Settings) {
             if (kinds != null) put("kinds", kinds)
         }) { json.decodeFromString<Envelope<List<OccurrenceDto>>>(it).let { e -> e.success to (e.body to e.misc) } }
 
-    suspend fun categories(): ApiResult<List<CategoryDto>> =
-        send("GET", "/api/calendar/categories", emptyMap()) {
+    suspend fun categories(
+        includeArchived: Boolean = false,
+        withCounts: Boolean = false,
+    ): ApiResult<List<CategoryDto>> =
+        send("GET", "/api/calendar/categories", buildMap {
+            if (includeArchived) put("active", "0")
+            if (withCounts) put("withCounts", "1")
+        }) {
             json.decodeFromString<Envelope<List<CategoryDto>>>(it).let { e -> e.success to (e.body to e.misc) }
         }
 
@@ -96,8 +105,35 @@ class CalendarApi(private val settings: Settings) {
     suspend fun cancelOccurrence(occurrenceId: String): ApiResult<Unit> =
         mutate("DELETE", "/api/calendar/occurrences/$occurrenceId", null)
 
-    private suspend fun mutate(method: String, path: String, payload: JsonObject?): ApiResult<Unit> =
-        send(method, path, emptyMap(), payload) {
+    suspend fun createCategory(payload: JsonObject): ApiResult<Unit> =
+        mutate("POST", "/api/calendar/categories", payload)
+
+    suspend fun updateCategory(id: Int, payload: JsonObject): ApiResult<Unit> =
+        mutate("PUT", "/api/calendar/categories/$id", payload)
+
+    suspend fun archiveCategory(id: Int, active: Boolean): ApiResult<Unit> =
+        mutate("PATCH", "/api/calendar/categories/$id/archive", jsonOf("active" to active))
+
+    suspend fun reorderCategories(orderedIds: List<Int>): ApiResult<Unit> =
+        mutate("POST", "/api/calendar/categories/reorder", buildJsonObject {
+            putJsonArray("orderedIds") { orderedIds.forEach { add(it) } }
+        })
+
+    suspend fun deleteCategory(id: Int, reassignTo: Int?): ApiResult<Unit> =
+        mutate(
+            method = "DELETE",
+            path = "/api/calendar/categories/$id",
+            payload = null,
+            query = reassignTo?.let { mapOf("reassignTo" to it.toString()) } ?: mapOf("force" to "1"),
+        )
+
+    private suspend fun mutate(
+        method: String,
+        path: String,
+        payload: JsonObject?,
+        query: Map<String, String> = emptyMap(),
+    ): ApiResult<Unit> =
+        send(method, path, query, payload) {
             json.decodeFromString<Ack>(it).let { ack ->
                 ack.success to (Unit to null)
             }

@@ -26,6 +26,23 @@ internal val TokenWarning = Color(0xFFEFA831)
 internal val TokenDestructive = Color(0xFFE62B34)
 internal val TokenNeutral = Color(0xFF59656E)
 
+data class PaletteToken(val token: String, val label: String, val color: Color)
+
+val paletteTokens: List<PaletteToken> = listOf(
+    PaletteToken("primary", "primária", Azure),
+    PaletteToken("accent", "destaque", TokenAccent),
+    PaletteToken("success", "sucesso", TokenSuccess),
+    PaletteToken("warning", "atenção", TokenWarning),
+    PaletteToken("destructive", "crítico", TokenDestructive),
+    PaletteToken("neutral", "neutro", TokenNeutral),
+)
+
+fun colorFromValue(raw: String?): Color? {
+    val value = raw?.trim()?.lowercase() ?: return null
+
+    return paletteTokens.firstOrNull { it.token == value }?.color ?: colorFromToken(value)
+}
+
 fun colorFromToken(hex: String?): Color? {
     val value = hex?.trim()?.removePrefix("#") ?: return null
     if (value.length != 6) return null

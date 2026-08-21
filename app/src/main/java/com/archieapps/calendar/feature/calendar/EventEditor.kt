@@ -30,10 +30,12 @@ import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.colorFromToken
+import com.archieapps.calendar.feature.categories.pillLabel
 import com.archieapps.calendar.design.components.CircleButton
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
 import com.archieapps.calendar.design.components.PillRow
+import com.archieapps.calendar.design.components.Stepper
 import java.time.LocalDate
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
@@ -86,7 +88,7 @@ fun EventEditor(
 
         Spacer(Modifier.height(Space.xl))
         Section("quando")
-        DateRow(draft.date, onShift = { days -> onChange { it.copy(date = it.date.plusDays(days)) } })
+        DateStepper(draft.date, onPick = { date -> onChange { it.onDate(date) } })
 
         Spacer(Modifier.height(Space.md))
         PillRow {
@@ -114,12 +116,7 @@ fun EventEditor(
         }
 
         Spacer(Modifier.height(Space.xl))
-        Section("repetir")
-        ScrollingPills {
-            Repeat.entries.forEach { option ->
-                Pill(option.label, draft.repeat == option, { onChange { it.copy(repeat = option) } })
-            }
-        }
+        RepeatFields(draft, onChange)
 
         if (categories.isNotEmpty()) {
             Spacer(Modifier.height(Space.xl))
@@ -127,7 +124,7 @@ fun EventEditor(
             ScrollingPills {
                 categories.forEach { category ->
                     Pill(
-                        label = category.name,
+                        label = category.pillLabel(),
                         selected = draft.categoryId == category.id,
                         onClick = { onChange { it.copy(categoryId = category.id) } },
                         dot = colorFromToken(category.color),
@@ -173,6 +170,123 @@ fun EventEditor(
 }
 
 @Composable
+private fun RepeatFields(draft: EventDraft, onChange: ((EventDraft) -> EventDraft) -> Unit) {
+    val colors = LocalChronicle.current
+    val rule = draft.recurrence
+
+    Section("repetir")
+    ScrollingPills {
+        Pill("não repete", !rule.repeats, { onChange { it.withUnit(null) } })
+
+        RepeatUnit.entries.forEach { unit ->
+            Pill(unit.one, rule.unit == unit, { onChange { it.withUnit(unit) } })
+        }
+    }
+
+    val unit = rule.unit ?: return
+
+    Spacer(Modifier.height(Space.lg))
+    Section("a cada")
+    Stepper(
+        value = rule.interval,
+        onChange = { value -> onChange { it.withRecurrence { current -> current.copy(interval = value) } } },
+        unit = if (rule.interval == 1) unit.one else unit.many,
+        min = 1,
+        max = Recurrence.MAX_INTERVAL,
+    )
+
+    if (unit == RepeatUnit.Week) {
+        Spacer(Modifier.height(Space.lg))
+        Section("nos dias")
+        ScrollingPills {
+            weekOrder.forEach { day ->
+                Pill(
+                    label = weekdayShort(day),
+                    selected = day in rule.weekdays,
+                    onClick = {
+                        onChange {
+                            it.withRecurrence { current ->
+                                val days = if (day in current.weekdays) {
+                                    current.weekdays - day
+                                } else {
+                                    current.weekdays + day
+                                }
+
+                                current.copy(weekdays = days)
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    if (unit == RepeatUnit.Month) {
+        Spacer(Modifier.height(Space.lg))
+        Section("no mês")
+        ScrollingPills {
+            Pill(
+                label = "todo dia ${draft.date.dayOfMonth}",
+                selected = rule.monthlyMode == MonthlyMode.DayOfMonth,
+                onClick = { onChange { it.withRecurrence { c -> c.copy(monthlyMode = MonthlyMode.DayOfMonth) } } },
+            )
+            Pill(
+                label = "toda ${ordinalLabel(ordinalOf(draft.date))} ${weekdayName(draft.date.dayOfWeek)}",
+                selected = rule.monthlyMode == MonthlyMode.WeekdayOfMonth,
+                onClick = { onChange { it.withRecurrence { c -> c.copy(monthlyMode = MonthlyMode.WeekdayOfMonth) } } },
+            )
+        }
+
+        if (rule.monthlyMode == MonthlyMode.DayOfMonth && draft.date.dayOfMonth > 28) {
+            Spacer(Modifier.height(Space.sm))
+            Text(
+                text = "meses sem o dia ${draft.date.dayOfMonth} são pulados",
+                style = EntryMeta,
+                color = colors.slate,
+            )
+        }
+    }
+
+    Spacer(Modifier.height(Space.lg))
+    Section("termina")
+    ScrollingPills {
+        Pill("nunca", rule.ending == RepeatEnding.Never, { onChange { it.withEnding(RepeatEnding.Never) } })
+        Pill("após", rule.ending == RepeatEnding.Count, { onChange { it.withEnding(RepeatEnding.Count) } })
+        Pill("em", rule.ending == RepeatEnding.Until, { onChange { it.withEnding(RepeatEnding.Until) } })
+    }
+
+    when (rule.ending) {
+        RepeatEnding.Count -> {
+            Spacer(Modifier.height(Space.md))
+            Stepper(
+                value = rule.count,
+                onChange = { value -> onChange { it.withRecurrence { c -> c.copy(count = value) } } },
+                unit = if (rule.count == 1) "vez" else "vezes",
+                min = 1,
+                max = Recurrence.MAX_COUNT,
+            )
+        }
+
+        RepeatEnding.Until -> {
+            Spacer(Modifier.height(Space.md))
+            DateStepper(
+                date = rule.until ?: Recurrence.defaultUntil(draft.date),
+                onPick = { date -> onChange { it.withRecurrence { c -> c.copy(until = date) } } },
+                months = true,
+            )
+        }
+
+        RepeatEnding.Never -> Unit
+    }
+
+    Spacer(Modifier.height(Space.md))
+    Text(rule.summary(draft.date), style = EntryMeta, color = colors.brand)
+}
+
+private fun EventDraft.withEnding(ending: RepeatEnding): EventDraft =
+    withRecurrence { it.copy(ending = ending) }
+
+@Composable
 private fun Section(label: String) {
     val colors = LocalChronicle.current
 
@@ -194,7 +308,7 @@ private fun ScrollingPills(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun DateRow(date: LocalDate, onShift: (Long) -> Unit) {
+private fun DateStepper(date: LocalDate, onPick: (LocalDate) -> Unit, months: Boolean = false) {
     val colors = LocalChronicle.current
     val weekday = date.dayOfWeek.getDisplayName(JavaTextStyle.SHORT, ptBr)
     val month = date.month.getDisplayName(JavaTextStyle.FULL, ptBr)
@@ -203,7 +317,11 @@ private fun DateRow(date: LocalDate, onShift: (Long) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Space.md),
     ) {
-        CircleButton(glyph = "\u2212", label = "Um dia antes", onClick = { onShift(-1) }, diameter = 36)
+        if (months) {
+            CircleButton(glyph = "«", label = "Um mês antes", onClick = { onPick(date.minusMonths(1)) }, diameter = 36)
+        }
+
+        CircleButton(glyph = "−", label = "Um dia antes", onClick = { onPick(date.minusDays(1)) }, diameter = 36)
 
         Text(
             text = "$weekday, ${date.dayOfMonth} de $month",
@@ -211,6 +329,10 @@ private fun DateRow(date: LocalDate, onShift: (Long) -> Unit) {
             color = colors.ink,
         )
 
-        CircleButton(glyph = "+", label = "Um dia depois", onClick = { onShift(1) }, diameter = 36)
+        CircleButton(glyph = "+", label = "Um dia depois", onClick = { onPick(date.plusDays(1)) }, diameter = 36)
+
+        if (months) {
+            CircleButton(glyph = "»", label = "Um mês depois", onClick = { onPick(date.plusMonths(1)) }, diameter = 36)
+        }
     }
 }

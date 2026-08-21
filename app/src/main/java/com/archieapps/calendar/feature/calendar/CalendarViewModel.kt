@@ -67,7 +67,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     init {
         _state.update { it.copy(unlocked = AccessCode.present) }
         ensure(_state.value.month, settle = false)
-        loadCategories()
+        refreshCategories()
     }
 
     fun askForCode() = _state.update { it.copy(askCode = true, unlockError = null) }
@@ -193,7 +193,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         }
     }
 
-    private fun loadCategories() {
+    fun refreshCategories() {
         viewModelScope.launch {
             val result = api.categories()
 

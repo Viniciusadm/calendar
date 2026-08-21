@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -53,6 +54,10 @@ import com.archieapps.calendar.feature.calendar.EntrySheet
 import com.archieapps.calendar.feature.calendar.EventEditor
 import com.archieapps.calendar.feature.calendar.MonthPickerSheet
 import com.archieapps.calendar.feature.calendar.MonthScreen
+import com.archieapps.calendar.feature.categories.CategoriesScreen
+import com.archieapps.calendar.feature.categories.CategoriesViewModel
+import com.archieapps.calendar.feature.categories.CategoryDeletePrompt
+import com.archieapps.calendar.feature.categories.CategoryEditor
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,6 +148,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
 
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
+    var route by remember { mutableStateOf(Route.Month) }
     var accountOpen by remember { mutableStateOf(false) }
     var pickerOpen by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf(Triple(settings.userName, settings.userEmail, settings.userImage)) }
@@ -187,29 +193,46 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
         containerColor = colors.ground,
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = viewModel::newEvent,
-                containerColor = colors.brand,
-                contentColor = if (colors.isDark) colors.ground else Color.White,
-            ) {
-                Text("+", style = Eyebrow)
+            if (route == Route.Month) {
+                FloatingActionButton(
+                    onClick = viewModel::newEvent,
+                    containerColor = colors.brand,
+                    contentColor = if (colors.isDark) colors.ground else Color.White,
+                ) {
+                    Text("+", style = Eyebrow)
+                }
             }
         },
     ) { insets ->
         Box(Modifier.padding(insets)) {
-            MonthScreen(
-                state = state,
-                onSelect = viewModel::select,
-                onShowMonth = viewModel::showMonth,
-                onPickMonth = { pickerOpen = true },
-                onToday = viewModel::today,
-                onRetry = viewModel::reload,
-                onOpenEntry = viewModel::focus,
-                onToggleEntry = viewModel::toggleCompletion,
-                onAccount = { accountOpen = true },
-                accountInitial = accountInitial(profile.first, profile.second),
-                accountPhoto = photo,
-            )
+            when (route) {
+                Route.Month -> MonthScreen(
+                    state = state,
+                    onSelect = viewModel::select,
+                    onShowMonth = viewModel::showMonth,
+                    onPickMonth = { pickerOpen = true },
+                    onToday = viewModel::today,
+                    onRetry = viewModel::reload,
+                    onOpenEntry = viewModel::focus,
+                    onToggleEntry = viewModel::toggleCompletion,
+                    onAccount = { accountOpen = true },
+                    accountInitial = accountInitial(profile.first, profile.second),
+                    accountPhoto = photo,
+                )
+
+                Route.Categories -> Categories(
+                    api = api,
+                    snackbar = snackbar,
+                    onLeave = { changed ->
+                        route = Route.Month
+
+                        if (changed) {
+                            viewModel.refreshCategories()
+                            viewModel.reload()
+                        }
+                    },
+                )
+            }
         }
     }
 
@@ -249,6 +272,10 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                 exactAlarmsAllowed = ExactAlarms.allowed(context),
                 canRequestExactAlarms = ExactAlarms.requestable(),
                 onRequestExactAlarms = { ExactAlarms.request(context) },
+                onCategories = {
+                    accountOpen = false
+                    route = Route.Categories
+                },
                 onSignOut = {
                     accountOpen = false
                     onSignedOut()
@@ -309,6 +336,104 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun Categories(
+    api: CalendarApi,
+    snackbar: SnackbarHostState,
+    onLeave: (Boolean) -> Unit,
+) {
+    val colors = LocalChronicle.current
+    val viewModel: CategoriesViewModel = viewModel(
+        key = "categories",
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                CategoriesViewModel(api) as T
+        }
+    )
+
+    val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.enter()
+    }
+
+    LaunchedEffect(state.notice) {
+        state.notice?.let {
+            snackbar.showSnackbar(it)
+            viewModel.dismissNotice()
+        }
+    }
+
+    LaunchedEffect(state.unauthorized) {
+        if (state.unauthorized) onLeave(true)
+    }
+
+    BackHandler { onLeave(state.dirty) }
+
+    CategoriesScreen(
+        state = state,
+        onBack = { onLeave(state.dirty) },
+        onNew = viewModel::newCategory,
+        onEdit = viewModel::edit,
+        onToggleArchive = viewModel::toggleArchive,
+        onDelete = viewModel::askDelete,
+        onMove = viewModel::move,
+        onRetry = viewModel::load,
+    )
+
+    state.draft?.let { draft ->
+        ModalBottomSheet(
+            onDismissRequest = viewModel::closeDraft,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = colors.surface,
+        ) {
+            CategoryEditor(
+                draft = draft,
+                category = state.items.firstOrNull { it.id == draft.id },
+                saving = state.saving,
+                onChange = viewModel::updateDraft,
+                onSave = viewModel::save,
+                onCancel = viewModel::closeDraft,
+            )
+        }
+    }
+
+    state.pendingDelete?.let { category ->
+        ModalBottomSheet(
+            onDismissRequest = viewModel::dismissDelete,
+            sheetState = rememberModalBottomSheetState(),
+            containerColor = colors.surface,
+        ) {
+            CategoryDeletePrompt(
+                category = category,
+                targets = state.reassignTargets,
+                onReassign = viewModel::confirmDelete,
+                onForce = { viewModel.confirmDelete(null) },
+                onDismiss = viewModel::dismissDelete,
+            )
+        }
+    }
+
+    if (state.askCode) {
+        ModalBottomSheet(
+            onDismissRequest = viewModel::dismissCodePrompt,
+            sheetState = rememberModalBottomSheetState(),
+            containerColor = colors.surface,
+        ) {
+            AccessCodeSheet(
+                submitting = state.unlocking,
+                error = state.unlockError,
+                onSubmit = viewModel::submitCode,
+                onDismiss = viewModel::dismissCodePrompt,
+            )
+        }
+    }
+}
+
+private enum class Route { Month, Categories }
 
 private fun accountInitial(name: String?, email: String?): String {
     val source = name?.trim()?.takeIf { it.isNotEmpty() } ?: email?.trim()

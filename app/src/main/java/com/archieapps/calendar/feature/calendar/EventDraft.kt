@@ -8,22 +8,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
-enum class Repeat(val label: String, val rrule: String?) {
-    None("não repete", null),
-    Daily("todo dia", "FREQ=DAILY"),
-    Weekly("toda semana", "FREQ=WEEKLY"),
-    Monthly("todo mês", "FREQ=MONTHLY"),
-    Yearly("todo ano", "FREQ=YEARLY");
-
-    companion object {
-        fun fromRule(rule: String?): Repeat {
-            val normalized = rule?.uppercase() ?: return None
-
-            return entries.firstOrNull { it.rrule != null && normalized.startsWith(it.rrule) } ?: None
-        }
-    }
-}
-
 val reminderChoices: List<Pair<String, Int?>> = listOf(
     "sem lembrete" to null,
     "na hora" to 0,
@@ -42,13 +26,29 @@ data class EventDraft(
     val categoryId: Int? = null,
     val priority: String = "none",
     val isTask: Boolean = false,
-    val repeat: Repeat = Repeat.None,
+    val recurrence: Recurrence = Recurrence(),
     val reminderMinutes: Int? = null,
     val days: Int = 1,
 ) {
     val isEditing: Boolean get() = eventId != null
 
     val canSave: Boolean get() = title.isNotBlank()
+
+    fun onDate(date: LocalDate): EventDraft = copy(date = date, recurrence = recurrence.normalized(date))
+
+    fun withRecurrence(transform: (Recurrence) -> Recurrence): EventDraft =
+        copy(recurrence = transform(recurrence).normalized(date))
+
+    fun withUnit(unit: RepeatUnit?): EventDraft = withRecurrence { rule ->
+        rule.copy(
+            unit = unit,
+            weekdays = if (unit == RepeatUnit.Week && rule.weekdays.isEmpty()) {
+                setOf(date.dayOfWeek)
+            } else {
+                rule.weekdays
+            },
+        )
+    }
 
     fun toPayload(): JsonObject = buildJsonObject {
         put("title", title.trim())
@@ -63,7 +63,7 @@ data class EventDraft(
         }
         put("priority", priority)
         categoryId?.let { put("categoryId", it) }
-        repeat.rrule?.let { put("recurrence", it) }
+        put("recurrence", recurrence.rule(date))
         putJsonArray("reminders") {
             reminderMinutes?.let { minutes ->
                 add(buildJsonObject { put("minutesBefore", minutes) })
@@ -85,7 +85,7 @@ data class EventDraft(
             categoryId = dto.categoryId,
             priority = dto.priority,
             isTask = dto.nature == "task",
-            repeat = Repeat.fromRule(dto.recurrence),
+            recurrence = Recurrence.parse(dto.recurrence),
             reminderMinutes = dto.reminders.firstOrNull { it.active }?.minutesBefore,
             days = if (dto.allDay) (dto.durationMinutes / 1440).coerceAtLeast(1) else 1,
         )

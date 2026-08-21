@@ -37,6 +37,7 @@ fun AccountSheet(
     exactAlarmsAllowed: Boolean,
     canRequestExactAlarms: Boolean,
     onRequestExactAlarms: () -> Unit,
+    onCategories: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -69,6 +70,15 @@ fun AccountSheet(
         Spacer(Modifier.height(Space.xl))
 
         PrivateSection(unlocked = unlocked, onAskCode = onAskCode, onLock = onLock)
+
+        Spacer(Modifier.height(Space.xl))
+
+        Text("calendário", style = Eyebrow, color = colors.slate)
+        Spacer(Modifier.height(Space.sm))
+
+        TextButton(onClick = onCategories, contentPadding = PaddingValues(0.dp)) {
+            Text("Categorias", style = ButtonLabel, color = colors.brand)
+        }
 
         Spacer(Modifier.height(Space.lg))
 

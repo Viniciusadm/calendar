@@ -145,4 +145,6 @@ data class CategoryDto(
     val active: Boolean = true,
     @SerialName("isDefault") val isDefault: Boolean = false,
     val position: Int = 0,
+    val eventCount: Int? = null,
+    val goalCount: Int? = null,
 )
