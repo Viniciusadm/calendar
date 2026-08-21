@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.components.Avatar
+import com.archieapps.calendar.design.components.SearchButton
 import com.archieapps.calendar.design.components.TextAction
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
@@ -64,6 +65,7 @@ fun MonthScreen(
     onOpenEntry: (CalendarEntry) -> Unit,
     onToggleEntry: (CalendarEntry) -> Unit,
     onAccount: () -> Unit,
+    onOpenAgenda: () -> Unit,
     accountInitial: String,
     accountPhoto: ImageBitmap?,
     modifier: Modifier = Modifier,
@@ -83,6 +85,7 @@ fun MonthScreen(
             onPickMonth = onPickMonth,
             onToday = onToday,
             onAccount = onAccount,
+            onOpenAgenda = onOpenAgenda,
             accountInitial = accountInitial,
             accountPhoto = accountPhoto,
         )
@@ -142,6 +145,7 @@ private fun MonthHeader(
     onPickMonth: () -> Unit,
     onToday: () -> Unit,
     onAccount: () -> Unit,
+    onOpenAgenda: () -> Unit,
     accountInitial: String,
     accountPhoto: ImageBitmap?,
 ) {
@@ -152,16 +156,18 @@ private fun MonthHeader(
     Row(
         modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = HeaderMinHeight),
         verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(
             modifier = Modifier
+                .weight(1f, fill = false)
                 .clip(RoundedCornerShape(Space.sm))
                 .clickable(onClick = onPickMonth)
                 .semantics { contentDescription = "Escolher mês e ano" }
                 .padding(end = Space.xs),
             verticalAlignment = Alignment.Bottom,
         ) {
-            Text(text = monthName, style = MonthTitle, color = colors.ink)
+            Text(text = monthName, style = MonthTitle, color = colors.ink, maxLines = 1)
             Spacer(Modifier.width(Space.sm))
             Text(
                 text = state.month.year.toString(),
@@ -172,20 +178,23 @@ private fun MonthHeader(
             Chevron(tint = colors.slate.copy(alpha = 0.7f))
         }
 
-        Spacer(Modifier.weight(1f))
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(Space.sm),
+        ) {
+            if (!isCurrentMonth) {
+                TextAction("hoje", onToday, colors.brand, style = Eyebrow, horizontal = Space.sm)
+            }
 
-        if (!isCurrentMonth) {
-            TextAction("hoje", onToday, colors.brand, style = Eyebrow, horizontal = Space.sm)
+            SearchButton(label = "Buscar na agenda", onClick = onOpenAgenda)
+
+            Avatar(
+                initial = accountInitial,
+                label = "Sua conta",
+                photo = accountPhoto,
+                onClick = onAccount,
+            )
         }
-
-        Spacer(Modifier.width(Space.sm))
-
-        Avatar(
-            initial = accountInitial,
-            label = "Sua conta",
-            photo = accountPhoto,
-            onClick = onAccount,
-        )
     }
 }
 

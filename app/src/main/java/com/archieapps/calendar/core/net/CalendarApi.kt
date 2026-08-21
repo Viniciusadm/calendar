@@ -42,6 +42,25 @@ class CalendarApi(private val settings: Settings) {
             if (kinds != null) put("kinds", kinds)
         }) { json.decodeFromString<Envelope<List<OccurrenceDto>>>(it).let { e -> e.success to (e.body to e.misc) } }
 
+    suspend fun agenda(
+        from: String,
+        cursor: String? = null,
+        query: String? = null,
+        categories: String? = null,
+        kinds: String? = null,
+        natures: String? = null,
+        limit: Int = 30,
+    ): ApiResult<List<OccurrenceDto>> =
+        send("GET", "/api/calendar/events/feed", buildMap {
+            put("from", from)
+            put("limit", limit.toString())
+            if (cursor != null) put("cursor", cursor)
+            if (!query.isNullOrBlank()) put("q", query)
+            if (categories != null) put("categories", categories)
+            if (kinds != null) put("kinds", kinds)
+            if (natures != null) put("natures", natures)
+        }) { json.decodeFromString<Envelope<List<OccurrenceDto>>>(it).let { e -> e.success to (e.body to e.misc) } }
+
     suspend fun categories(
         includeArchived: Boolean = false,
         withCounts: Boolean = false,

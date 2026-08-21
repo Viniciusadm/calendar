@@ -28,6 +28,7 @@ import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.paletteTokens
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
+import com.archieapps.calendar.design.components.ScrollingPills
 import com.archieapps.calendar.design.components.TextAction
 
 @Composable
@@ -161,13 +162,3 @@ private fun Section(label: String) {
     }
 }
 
-@Composable
-private fun ScrollingPills(content: @Composable () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(Space.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        content()
-    }
-}

@@ -17,6 +17,10 @@ data class Envelope<T>(
 data class FeedMisc(
     val window: FeedWindow? = null,
     val truncated: Boolean = false,
+    val from: String? = null,
+    val hasMore: Boolean = false,
+    val nextCursor: String? = null,
+    val scannedThrough: String? = null,
 )
 
 @Serializable

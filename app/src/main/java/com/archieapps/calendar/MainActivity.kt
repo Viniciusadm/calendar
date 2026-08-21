@@ -38,18 +38,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.archieapps.calendar.core.net.CalendarApi
+import com.archieapps.calendar.core.net.CategoryDto
 import com.archieapps.calendar.core.store.Settings
 import com.archieapps.calendar.core.alarm.ExactAlarms
 import com.archieapps.calendar.core.media.AvatarLoader
 import com.archieapps.calendar.core.net.ApiResult
 import com.archieapps.calendar.core.sync.ReminderSync
 import com.archieapps.calendar.design.CalendarTheme
+import java.time.LocalDate
+import java.time.YearMonth
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
+import com.archieapps.calendar.feature.agenda.AgendaFilterSheet
+import com.archieapps.calendar.feature.agenda.AgendaScreen
+import com.archieapps.calendar.feature.agenda.AgendaViewModel
 import com.archieapps.calendar.feature.auth.AccessCodeSheet
 import com.archieapps.calendar.feature.auth.AccountSheet
 import com.archieapps.calendar.feature.auth.LoginScreen
 import com.archieapps.calendar.feature.auth.LoginViewModel
+import com.archieapps.calendar.feature.calendar.CalendarEntry
 import com.archieapps.calendar.feature.calendar.CalendarViewModel
 import com.archieapps.calendar.feature.calendar.EntrySheet
 import com.archieapps.calendar.feature.calendar.EventEditor
@@ -145,6 +152,15 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
         }
     )
 
+    val agendaViewModel: AgendaViewModel = viewModel(
+        key = "agenda",
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                AgendaViewModel(api) as T
+        }
+    )
+
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var route by remember { mutableStateOf(Route.Month) }
@@ -215,8 +231,22 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                     onOpenEntry = viewModel::focus,
                     onToggleEntry = viewModel::toggleCompletion,
                     onAccount = { accountOpen = true },
+                    onOpenAgenda = { route = Route.Agenda },
                     accountInitial = accountInitial(profile.first, profile.second),
                     accountPhoto = photo,
+                )
+
+                Route.Agenda -> Agenda(
+                    viewModel = agendaViewModel,
+                    categories = state.categories,
+                    writeTick = state.writeTick,
+                    snackbar = snackbar,
+                    onOpen = viewModel::focus,
+                    onToggle = { entry ->
+                        agendaViewModel.markCompleted(entry.id, !entry.completed)
+                        viewModel.toggleCompletion(entry)
+                    },
+                    onLeave = { route = Route.Month },
                 )
 
                 Route.Categories -> Categories(
@@ -329,7 +359,10 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
                 categories = state.categories,
                 saving = state.saving,
                 onChange = viewModel::updateDraft,
-                onSave = viewModel::saveDraft,
+                onSave = {
+                    agendaViewModel.markStale()
+                    viewModel.saveDraft()
+                },
                 onCancel = viewModel::closeDraft,
             )
         }
@@ -432,7 +465,95 @@ private fun Categories(
     }
 }
 
-private enum class Route { Month, Categories }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun Agenda(
+    viewModel: AgendaViewModel,
+    categories: List<CategoryDto>,
+    writeTick: Int,
+    snackbar: SnackbarHostState,
+    onOpen: (CalendarEntry) -> Unit,
+    onToggle: (CalendarEntry) -> Unit,
+    onLeave: () -> Unit,
+) {
+    val colors = LocalChronicle.current
+    val state by viewModel.state.collectAsState()
+    var seenTick by remember { mutableStateOf(writeTick) }
+
+    LaunchedEffect(Unit) {
+        viewModel.enter()
+    }
+
+    LaunchedEffect(writeTick) {
+        if (writeTick != seenTick) {
+            seenTick = writeTick
+            viewModel.reloadIfStale()
+        }
+    }
+
+    LaunchedEffect(state.notice) {
+        state.notice?.let {
+            snackbar.showSnackbar(it)
+            viewModel.dismissNotice()
+        }
+    }
+
+    BackHandler { onLeave() }
+
+    AgendaScreen(
+        state = state,
+        onBack = onLeave,
+        onQuery = viewModel::onQuery,
+        onSubmitQuery = viewModel::submitQuery,
+        onOpenFilters = viewModel::openFilters,
+        onClearFilters = viewModel::clearFilters,
+        onOpen = onOpen,
+        onToggle = onToggle,
+        onLoadMore = viewModel::loadMore,
+        onRetry = viewModel::retry,
+        onRetryTail = viewModel::retryTail,
+    )
+
+    if (state.filtersOpen) {
+        ModalBottomSheet(
+            onDismissRequest = viewModel::closeFilters,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = colors.surface,
+        ) {
+            AgendaFilterSheet(
+                filters = state.filters,
+                categories = categories,
+                onFrom = viewModel::setFrom,
+                onToday = viewModel::anchorToday,
+                onPickMonth = viewModel::openMonthPicker,
+                onToggleCategory = viewModel::toggleCategory,
+                onToggleKind = viewModel::toggleKind,
+                onToggleNature = viewModel::toggleNature,
+                onClear = viewModel::clearFilters,
+            )
+        }
+    }
+
+    if (state.monthPickerOpen) {
+        ModalBottomSheet(
+            onDismissRequest = viewModel::closeMonthPicker,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = colors.surface,
+        ) {
+            MonthPickerSheet(
+                current = YearMonth.from(state.filters.from),
+                onPick = { month ->
+                    viewModel.closeMonthPicker()
+                    viewModel.setFrom(
+                        if (month == YearMonth.now()) LocalDate.now() else month.atDay(1),
+                    )
+                },
+            )
+        }
+    }
+}
+
+private enum class Route { Month, Categories, Agenda }
 
 private fun accountInitial(name: String?, email: String?): String {
     val source = name?.trim()?.takeIf { it.isNotEmpty() } ?: email?.trim()

@@ -58,7 +58,11 @@ fun HairlineField(
                 textStyle = textStyle.copy(color = colors.ink),
                 cursorBrush = SolidColor(colors.brand),
                 keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
-                keyboardActions = KeyboardActions(onDone = { onImeAction?.invoke() }, onGo = { onImeAction?.invoke() }),
+                keyboardActions = KeyboardActions(
+                    onDone = { onImeAction?.invoke() },
+                    onGo = { onImeAction?.invoke() },
+                    onSearch = { onImeAction?.invoke() },
+                ),
                 visualTransformation = visualTransformation,
                 modifier = Modifier
                     .fillMaxWidth()

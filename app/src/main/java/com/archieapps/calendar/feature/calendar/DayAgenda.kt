@@ -15,6 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 import androidx.compose.ui.text.style.TextDecoration
@@ -83,7 +85,21 @@ private fun SpineEntry(
         Spacer(
             Modifier
                 .width(gutter)
-                .then(if (tappableNode) Modifier.clickable(onClick = onToggle) else Modifier)
+                .then(
+                    if (tappableNode) {
+                        Modifier
+                            .clickable(onClick = onToggle)
+                            .semantics {
+                                contentDescription = if (entry.completed) {
+                                    "Reabrir ${entry.title}"
+                                } else {
+                                    "Concluir ${entry.title}"
+                                }
+                            }
+                    } else {
+                        Modifier
+                    }
+                )
                 .fillMaxHeight()
                 .drawBehind {
                     val x = gutter.toPx() / 2
@@ -127,6 +143,7 @@ private fun SpineEntry(
             modifier = Modifier
                 .weight(1f)
                 .clickable(onClick = onOpen)
+                .semantics(mergeDescendants = true) { contentDescription = rowLabel(entry) }
                 .padding(bottom = Space.lg)
         ) {
             Text(
@@ -164,3 +181,13 @@ private fun SpineEntry(
         }
     }
 }
+
+private fun rowLabel(entry: CalendarEntry): String =
+    buildList {
+        add(entry.title)
+        entry.clock?.let { add(it) }
+        if (entry.allDay && entry.agency == Agency.Mine) add("dia inteiro")
+        entry.categoryName?.let { add(it) }
+        entry.note?.let { add(it) }
+        if (entry.completed) add("concluído")
+    }.joinToString(", ")

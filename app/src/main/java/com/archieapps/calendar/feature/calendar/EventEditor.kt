@@ -29,8 +29,10 @@ import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.colorFromToken
 import com.archieapps.calendar.feature.categories.pillLabel
 import com.archieapps.calendar.design.components.CircleButton
+import com.archieapps.calendar.design.components.DateStepper
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
+import com.archieapps.calendar.design.components.ScrollingPills
 import com.archieapps.calendar.design.components.PillRow
 import com.archieapps.calendar.design.components.Stepper
 import com.archieapps.calendar.design.components.TextAction
@@ -298,43 +300,4 @@ private fun Section(label: String) {
     }
 }
 
-@Composable
-private fun ScrollingPills(content: @Composable () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(Space.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        content()
-    }
-}
 
-@Composable
-private fun DateStepper(date: LocalDate, onPick: (LocalDate) -> Unit, months: Boolean = false) {
-    val colors = LocalChronicle.current
-    val weekday = date.dayOfWeek.getDisplayName(JavaTextStyle.SHORT, ptBr)
-    val month = date.month.getDisplayName(JavaTextStyle.FULL, ptBr)
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Space.md),
-    ) {
-        if (months) {
-            CircleButton(glyph = "«", label = "Um mês antes", onClick = { onPick(date.minusMonths(1)) }, diameter = 36)
-        }
-
-        CircleButton(glyph = "−", label = "Um dia antes", onClick = { onPick(date.minusDays(1)) }, diameter = 36)
-
-        Text(
-            text = "$weekday, ${date.dayOfMonth} de $month",
-            style = EntryMeta,
-            color = colors.ink,
-        )
-
-        CircleButton(glyph = "+", label = "Um dia depois", onClick = { onPick(date.plusDays(1)) }, diameter = 36)
-
-        if (months) {
-            CircleButton(glyph = "»", label = "Um mês depois", onClick = { onPick(date.plusMonths(1)) }, diameter = 36)
-        }
-    }
-}
