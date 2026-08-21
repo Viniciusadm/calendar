@@ -118,6 +118,49 @@ fun EntrySheet(
 private fun Blocks(entry: CalendarEntry, detail: EntryDetail) {
     val colors = LocalChronicle.current
 
+    detail.facts.forEachIndexed { index, line ->
+        if (index == 0) Spacer(Modifier.height(Space.md))
+
+        Text(
+            text = line,
+            style = if (index == 0) EntryTitle else EntryMeta,
+            color = if (index == 0) colors.ink else colors.slate,
+            modifier = Modifier.padding(bottom = Space.xs),
+        )
+    }
+
+    detail.progress?.let { progress ->
+        Section("progresso")
+
+        LinearProgressIndicator(
+            progress = { progress.fraction },
+            modifier = Modifier.fillMaxWidth().height(Stroke.hairline),
+            color = entry.color,
+            trackColor = colors.hairline,
+        )
+
+        Spacer(Modifier.height(Space.sm))
+        Text(progress.label, style = EntryMeta, color = colors.slate)
+    }
+
+    detail.note?.let { note ->
+        Section("sobre")
+        Text(note, style = EntryTitle, color = colors.ink)
+    }
+
+    if (detail.contacts.isNotEmpty()) {
+        Section("contato")
+
+        detail.contacts.forEach { contact ->
+            Text(contact, style = EntryTitle, color = colors.ink, modifier = Modifier.padding(bottom = Space.xs))
+        }
+    }
+
+    if (detail.locked) {
+        Spacer(Modifier.height(Space.md))
+        Text("nota e contato ficam com o código", style = EntryMeta, color = colors.slate)
+    }
+
     if (detail.next.isNotEmpty()) {
         Section("próximas")
 

@@ -63,6 +63,26 @@ data class OccurrenceDto(
 )
 
 @Serializable
+data class ProjectionDetailDto(
+    val id: String,
+    val kind: String,
+    val locked: Boolean = false,
+    val name: String? = null,
+    val nickname: String? = null,
+    val birthDate: String? = null,
+    val age: Int? = null,
+    val note: String? = null,
+    val instagram: String? = null,
+    val phone: String? = null,
+    val series: String? = null,
+    val episode: Int? = null,
+    val total: Int? = null,
+    val watched: Int? = null,
+    val durationMinutes: Int? = null,
+    val type: String? = null,
+)
+
+@Serializable
 data class Ack(
     val success: Boolean = false,
     val message: String? = null,

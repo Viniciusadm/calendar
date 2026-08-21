@@ -72,6 +72,11 @@ class CalendarApi(private val settings: Settings) {
             json.decodeFromString<Envelope<List<CategoryDto>>>(it).let { e -> e.success to (e.body to e.misc) }
         }
 
+    suspend fun occurrenceDetail(id: String): ApiResult<ProjectionDetailDto> =
+        send("GET", "/api/calendar/occurrences/$id", emptyMap()) {
+            json.decodeFromString<Envelope<ProjectionDetailDto>>(it).let { e -> e.success to (e.body to e.misc) }
+        }
+
     suspend fun event(id: Int): ApiResult<EventDto> =
         send("GET", "/api/calendar/events/$id", emptyMap()) {
             json.decodeFromString<Envelope<EventDto>>(it).let { e -> e.success to (e.body to e.misc) }

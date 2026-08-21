@@ -209,10 +209,8 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     fun focus(entry: CalendarEntry?) {
         detailJob?.cancel()
 
-        val eventId = entry?.eventId
-
-        if (eventId == null) {
-            _state.update { it.copy(focused = entry, focusedDetail = DetailState.Absent) }
+        if (entry == null) {
+            _state.update { it.copy(focused = null, focusedDetail = DetailState.Absent) }
 
             return
         }
@@ -220,17 +218,30 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         _state.update { it.copy(focused = entry, focusedDetail = DetailState.Loading) }
 
         detailJob = viewModelScope.launch {
-            val result = api.event(eventId)
+            val detail = load(entry)
 
-            if (_state.value.focused?.eventId != eventId) return@launch
-
-            val detail = when (result) {
-                is ApiResult.Ok -> DetailState.Ready(result.value.toDetail())
-                is ApiResult.Failure -> DetailState.Absent
-            }
+            if (_state.value.focused?.id != entry.id) return@launch
 
             _state.update { it.copy(focusedDetail = detail) }
         }
+    }
+
+    private suspend fun load(entry: CalendarEntry): DetailState {
+        val eventId = entry.eventId
+
+        val detail = if (eventId == null) {
+            when (val result = api.occurrenceDetail(entry.id)) {
+                is ApiResult.Ok -> result.value.toDetail(entry.date)
+                is ApiResult.Failure -> null
+            }
+        } else {
+            when (val result = api.event(eventId)) {
+                is ApiResult.Ok -> result.value.toDetail()
+                is ApiResult.Failure -> null
+            }
+        }
+
+        return detail?.let { DetailState.Ready(it) } ?: DetailState.Absent
     }
 
     fun newEvent() {
