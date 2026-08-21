@@ -15,12 +15,17 @@ class Settings(context: Context) {
         get() = prefs.getString(KEY_TOKEN, null)
         set(value) = prefs.edit().putString(KEY_TOKEN, value).apply()
 
+    var revision: String?
+        get() = prefs.getString(KEY_REVISION, null)
+        set(value) = prefs.edit().putString(KEY_REVISION, value).apply()
+
     val isConfigured: Boolean
         get() = !token.isNullOrBlank()
 
     companion object {
         private const val KEY_BASE_URL = "base_url"
         private const val KEY_TOKEN = "token"
+        private const val KEY_REVISION = "revision"
         const val DEFAULT_BASE_URL = "http://10.0.2.2:8001"
     }
 }

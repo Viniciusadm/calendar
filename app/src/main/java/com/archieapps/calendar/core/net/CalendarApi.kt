@@ -49,6 +49,16 @@ class CalendarApi(private val settings: Settings) {
             json.decodeFromString<Envelope<EventDto>>(it).let { e -> e.success to (e.body to e.misc) }
         }
 
+    suspend fun syncState(): ApiResult<SyncStateDto> =
+        send("GET", "/api/calendar/sync/state", emptyMap()) {
+            json.decodeFromString<Envelope<SyncStateDto>>(it).let { e -> e.success to (e.body to e.misc) }
+        }
+
+    suspend fun reminderSchedule(from: String, days: Int): ApiResult<List<ReminderPlanEntry>> =
+        send("GET", "/api/calendar/reminders/schedule", mapOf("from" to from, "days" to days.toString())) {
+            json.decodeFromString<Envelope<List<ReminderPlanEntry>>>(it).let { e -> e.success to (e.body to e.misc) }
+        }
+
     suspend fun createEvent(payload: JsonObject): ApiResult<Unit> =
         mutate("POST", "/api/calendar/events", payload)
 

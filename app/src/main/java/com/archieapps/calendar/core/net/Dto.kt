@@ -95,6 +95,28 @@ data class ReminderDto(
 )
 
 @Serializable
+data class SyncStateDto(
+    val revision: String,
+    val domains: Map<String, String> = emptyMap(),
+    val calculatedAt: String? = null,
+)
+
+@Serializable
+data class ReminderPlanEntry(
+    val key: String,
+    val reminderId: Int,
+    val eventId: Int,
+    val occurrenceId: String,
+    val triggerAt: String,
+    val occurrenceStartAt: String,
+    val minutesBefore: Int,
+    val allDay: Boolean = false,
+    val title: String,
+    val label: String? = null,
+    val categoryName: String? = null,
+)
+
+@Serializable
 data class CategoryDto(
     val id: Int,
     val name: String,

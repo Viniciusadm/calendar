@@ -1,8 +1,12 @@
 package com.archieapps.calendar
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,11 +28,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.archieapps.calendar.core.net.CalendarApi
 import com.archieapps.calendar.core.store.Settings
+import com.archieapps.calendar.core.sync.ReminderSync
 import com.archieapps.calendar.design.CalendarTheme
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
@@ -37,6 +43,7 @@ import com.archieapps.calendar.feature.calendar.EntrySheet
 import com.archieapps.calendar.feature.calendar.EventEditor
 import com.archieapps.calendar.feature.calendar.MonthScreen
 import com.archieapps.calendar.feature.calendar.SetupScreen
+import android.content.pm.PackageManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,6 +85,21 @@ private fun CalendarApp() {
     Chronicle(settings)
 }
 
+@Composable
+private fun NotificationPermissionGate() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+
+    LaunchedEffect(Unit) {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+
+        if (!granted) launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Chronicle(settings: Settings) {
@@ -92,6 +114,13 @@ private fun Chronicle(settings: Settings) {
 
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    NotificationPermissionGate()
+
+    LaunchedEffect(state.writeTick) {
+        ReminderSync.run(context, force = state.writeTick > 0)
+    }
 
     LaunchedEffect(state.notice) {
         state.notice?.let {

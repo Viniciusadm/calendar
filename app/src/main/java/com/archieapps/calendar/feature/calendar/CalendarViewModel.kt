@@ -26,6 +26,7 @@ data class CalendarState(
     val notice: String? = null,
     val draft: EventDraft? = null,
     val focused: CalendarEntry? = null,
+    val writeTick: Int = 0,
 ) {
     val gridStart: LocalDate
         get() = month.atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
@@ -188,7 +189,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         when (result) {
             is ApiResult.Ok -> {
                 onOk()
-                _state.update { it.copy(saving = false, notice = success) }
+                _state.update { it.copy(saving = false, notice = success, writeTick = it.writeTick + 1) }
                 load()
             }
 
