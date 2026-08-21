@@ -1,29 +1,24 @@
 package com.archieapps.calendar.feature.auth
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.width
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.ImageBitmap
-import com.archieapps.calendar.design.components.Avatar
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import com.archieapps.calendar.design.ButtonLabel
+import androidx.compose.ui.graphics.ImageBitmap
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
+import com.archieapps.calendar.design.components.Avatar
+import com.archieapps.calendar.design.components.TextAction
 
 @Composable
 fun AccountSheet(
@@ -43,14 +38,9 @@ fun AccountSheet(
 ) {
     val colors = LocalChronicle.current
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = Space.lg),
-    ) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = Space.lg)) {
         Text("conta", style = Eyebrow, color = colors.slate)
-        Spacer(Modifier.height(Space.md))
+        Spacer(Modifier.height(Space.sm))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Avatar(initial = initial, label = "Sua foto", photo = photo, diameter = 56)
@@ -71,40 +61,22 @@ fun AccountSheet(
 
         PrivateSection(unlocked = unlocked, onAskCode = onAskCode, onLock = onLock)
 
-        Spacer(Modifier.height(Space.xl))
+        Spacer(Modifier.height(Space.md))
 
         Text("calendário", style = Eyebrow, color = colors.slate)
-        Spacer(Modifier.height(Space.sm))
+        Spacer(Modifier.height(Space.xs))
 
-        TextButton(onClick = onCategories, contentPadding = PaddingValues(0.dp)) {
-            Text("Categorias", style = ButtonLabel, color = colors.brand)
-        }
-
-        Spacer(Modifier.height(Space.lg))
+        TextAction("Categorias", onCategories, colors.brand)
 
         if (! exactAlarmsAllowed && canRequestExactAlarms) {
-            TextButton(onClick = onRequestExactAlarms, contentPadding = PaddingValues(0.dp)) {
-                Text("Permitir alarme exato", style = ButtonLabel, color = colors.brand)
-            }
-
-            Spacer(Modifier.height(Space.lg))
+            TextAction("Permitir alarme exato", onRequestExactAlarms, colors.brand)
         }
 
-        TextButton(
-            onClick = onSignOut,
-            contentPadding = PaddingValues(0.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                "Sair da conta",
-                style = ButtonLabel,
-                color = colors.slate,
-                textAlign = TextAlign.Start,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        Spacer(Modifier.height(Space.md))
 
-        Spacer(Modifier.height(Space.lg))
+        TextAction("Sair da conta", onSignOut, colors.slate, stretch = true)
+
+        Spacer(Modifier.height(Space.sm))
     }
 }
 
@@ -113,17 +85,13 @@ private fun PrivateSection(unlocked: Boolean, onAskCode: () -> Unit, onLock: () 
     val colors = LocalChronicle.current
 
     Text("acesso", style = Eyebrow, color = colors.slate)
-    Spacer(Modifier.height(Space.sm))
+    Spacer(Modifier.height(Space.xs))
 
     if (unlocked) {
-        TextButton(onClick = onLock, contentPadding = PaddingValues(0.dp)) {
-            Text("Travar de novo", style = ButtonLabel, color = colors.brand)
-        }
+        TextAction("Travar de novo", onLock, colors.brand)
 
         return
     }
 
-    TextButton(onClick = onAskCode, contentPadding = PaddingValues(0.dp)) {
-        Text("Digitar o código", style = ButtonLabel, color = colors.brand)
-    }
+    TextAction("Digitar o código", onAskCode, colors.brand)
 }

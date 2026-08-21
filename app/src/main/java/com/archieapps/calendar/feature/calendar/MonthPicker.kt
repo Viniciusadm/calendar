@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -54,7 +53,6 @@ fun MonthPickerSheet(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(horizontal = Space.lg),
     ) {
         Text("ir para".uppercase(), style = Eyebrow, color = colors.slate)
@@ -98,7 +96,7 @@ fun MonthPickerSheet(
             }
         }
 
-        Spacer(Modifier.height(Space.xxl))
+        Spacer(Modifier.height(Space.xl))
     }
 }
 

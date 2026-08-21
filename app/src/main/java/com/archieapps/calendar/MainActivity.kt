@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -78,19 +79,17 @@ private fun Root() {
     val colors = LocalChronicle.current
     var loggedIn by remember { mutableStateOf(settings.isLoggedIn) }
 
-    Scaffold(modifier = Modifier.fillMaxSize(), containerColor = colors.ground) { insets ->
-        Box(Modifier.padding(insets)) {
-            if (loggedIn) {
-                Chronicle(
-                    settings = settings,
-                    onSignedOut = {
-                        settings.clearSession()
-                        loggedIn = false
-                    },
-                )
-            } else {
-                Login(settings = settings, onAuthenticated = { loggedIn = true })
-            }
+    Box(Modifier.fillMaxSize().background(colors.ground)) {
+        if (loggedIn) {
+            Chronicle(
+                settings = settings,
+                onSignedOut = {
+                    settings.clearSession()
+                    loggedIn = false
+                },
+            )
+        } else {
+            Login(settings = settings, onAuthenticated = { loggedIn = true })
         }
     }
 }
@@ -239,7 +238,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
     if (pickerOpen) {
         ModalBottomSheet(
             onDismissRequest = { pickerOpen = false },
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = colors.surface,
         ) {
             MonthPickerSheet(
@@ -255,7 +254,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
     if (accountOpen) {
         ModalBottomSheet(
             onDismissRequest = { accountOpen = false },
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = colors.surface,
         ) {
             AccountSheet(
@@ -287,7 +286,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
     if (state.askCode) {
         ModalBottomSheet(
             onDismissRequest = viewModel::dismissCodePrompt,
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = colors.surface,
         ) {
             AccessCodeSheet(
@@ -302,7 +301,7 @@ private fun Chronicle(settings: Settings, onSignedOut: () -> Unit) {
     state.focused?.let { entry ->
         ModalBottomSheet(
             onDismissRequest = { viewModel.focus(null) },
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = colors.surface,
         ) {
             EntrySheet(
@@ -404,7 +403,7 @@ private fun Categories(
     state.pendingDelete?.let { category ->
         ModalBottomSheet(
             onDismissRequest = viewModel::dismissDelete,
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = colors.surface,
         ) {
             CategoryDeletePrompt(
@@ -420,7 +419,7 @@ private fun Categories(
     if (state.askCode) {
         ModalBottomSheet(
             onDismissRequest = viewModel::dismissCodePrompt,
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = colors.surface,
         ) {
             AccessCodeSheet(

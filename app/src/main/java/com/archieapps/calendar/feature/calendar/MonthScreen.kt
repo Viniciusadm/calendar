@@ -3,7 +3,6 @@ package com.archieapps.calendar.feature.calendar
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.components.Avatar
+import com.archieapps.calendar.design.components.TextAction
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.Space
@@ -114,9 +113,7 @@ fun MonthScreen(
         state.error?.let { message ->
             Spacer(Modifier.height(Space.lg))
             Text(message, style = EntryMeta, color = colors.ink)
-            TextButton(onClick = onRetry, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                Text("Tentar de novo", style = Eyebrow, color = colors.brand)
-            }
+            TextAction("Tentar de novo", onRetry, colors.brand, style = Eyebrow)
         }
 
         Spacer(Modifier.height(Space.xl))
@@ -178,9 +175,7 @@ private fun MonthHeader(
         Spacer(Modifier.weight(1f))
 
         if (!isCurrentMonth) {
-            TextButton(onClick = onToday, contentPadding = PaddingValues(horizontal = Space.sm)) {
-                Text("hoje", style = Eyebrow, color = colors.brand)
-            }
+            TextAction("hoje", onToday, colors.brand, style = Eyebrow, horizontal = Space.sm)
         }
 
         Spacer(Modifier.width(Space.sm))

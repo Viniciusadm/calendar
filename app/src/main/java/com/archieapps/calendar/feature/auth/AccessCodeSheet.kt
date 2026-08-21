@@ -5,16 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,6 +29,7 @@ import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
+import com.archieapps.calendar.design.components.TextAction
 
 @Composable
 fun AccessCodeSheet(
@@ -50,7 +48,6 @@ fun AccessCodeSheet(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(horizontal = Space.lg),
     ) {
         Text("código de acesso", style = Eyebrow, color = colors.slate)
@@ -82,27 +79,26 @@ fun AccessCodeSheet(
 
         Spacer(Modifier.height(Space.sm))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.lg)) {
-            TextButton(onClick = { code = "" }, contentPadding = PaddingValues(0.dp)) {
-                Text("Apagar", style = ButtonLabel, color = colors.slate)
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Space.lg),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextAction("Apagar", { code = "" }, colors.slate)
 
-            TextButton(
+            TextAction(
+                label = if (submitting) "Validando…" else "Liberar",
                 onClick = { onSubmit(code) },
+                color = colors.brand,
                 enabled = code.length == AccessCode.LENGTH && !submitting,
-                contentPadding = PaddingValues(0.dp),
-            ) {
-                Text(if (submitting) "Validando…" else "Liberar", style = ButtonLabel, color = colors.brand)
-            }
+            )
 
             Spacer(Modifier.weight(1f))
 
-            TextButton(onClick = onDismiss, contentPadding = PaddingValues(0.dp)) {
-                Text("Depois", style = ButtonLabel, color = colors.slate)
-            }
+            TextAction("Depois", onDismiss, colors.slate)
         }
 
-        Spacer(Modifier.height(Space.lg))
+        Spacer(Modifier.height(Space.sm))
     }
 }
 

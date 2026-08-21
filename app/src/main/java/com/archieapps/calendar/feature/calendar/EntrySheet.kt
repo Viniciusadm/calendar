@@ -4,21 +4,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.design.EntryMeta
-import com.archieapps.calendar.design.ButtonLabel
-import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
+import com.archieapps.calendar.design.components.TextAction
 
 @Composable
 fun EntrySheet(
@@ -32,51 +26,45 @@ fun EntrySheet(
 ) {
     val colors = LocalChronicle.current
 
-    Column(modifier = modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Space.lg)) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = Space.lg)) {
         Text(entry.title, style = SheetTitle, color = colors.ink)
 
-        Spacer(Modifier.height(Space.sm))
+        val meta = describe(entry)
 
-        Text(
-            text = describe(entry),
-            style = EntryMeta,
-            color = colors.slate,
-        )
+        if (meta.isNotEmpty()) {
+            Spacer(Modifier.height(Space.sm))
+            Text(meta, style = EntryMeta, color = colors.slate)
+        }
 
-        Spacer(Modifier.height(Space.xl))
+        Spacer(Modifier.height(Space.md))
 
         if (entry.agency != Agency.Mine) {
-            Action("Fechar", colors.slate, onDismiss)
-            Spacer(Modifier.height(Space.xl))
+            TextAction("Fechar", onDismiss, colors.slate, stretch = true)
+            Spacer(Modifier.height(Space.sm))
             return@Column
         }
 
         if (entry.isTask) {
-            Action(
+            TextAction(
                 label = if (entry.completed) "Reabrir" else "Marcar como concluído",
-                color = colors.brand,
                 onClick = onToggleCompletion,
+                color = colors.brand,
+                stretch = true,
             )
         }
 
-        Action("Editar evento", colors.ink, onEdit)
+        TextAction("Editar evento", onEdit, colors.ink, stretch = true)
 
         if (entry.recurring) {
-            Action("Remover só esta ocorrência", colors.ink, onCancelOccurrence)
-            Action("Remover a série inteira", colors.brand, onDeleteSeries)
+            TextAction("Remover só esta ocorrência", onCancelOccurrence, colors.ink, stretch = true)
+            TextAction("Remover a série inteira", onDeleteSeries, colors.brand, stretch = true)
         } else {
-            Action("Remover", colors.brand, onDeleteSeries)
+            TextAction("Remover", onDeleteSeries, colors.brand, stretch = true)
         }
 
-        Action("Fechar", colors.slate, onDismiss)
-        Spacer(Modifier.height(Space.xl))
-    }
-}
+        TextAction("Fechar", onDismiss, colors.slate, stretch = true)
 
-@Composable
-private fun Action(label: String, color: Color, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Text(label, style = ButtonLabel, color = color, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(Space.sm))
     }
 }
 
@@ -88,4 +76,3 @@ private fun describe(entry: CalendarEntry): String = buildList {
     if (entry.completed) add("concluído")
     entry.note?.let { add(it) }
 }.joinToString(" · ")
-

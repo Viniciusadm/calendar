@@ -2,9 +2,9 @@ package com.archieapps.calendar.feature.categories
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +27,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.core.net.CategoryDto
 import com.archieapps.calendar.design.EntryMeta
@@ -41,6 +39,7 @@ import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
 import com.archieapps.calendar.design.colorFromValue
 import com.archieapps.calendar.design.components.CircleButton
+import com.archieapps.calendar.design.components.TextAction
 
 @Composable
 fun CategoriesScreen(
@@ -73,9 +72,7 @@ fun CategoriesScreen(
 
             Spacer(Modifier.weight(1f))
 
-            TextButton(onClick = onNew, contentPadding = PaddingValues(horizontal = Space.sm)) {
-                Text("nova", style = Eyebrow, color = colors.brand)
-            }
+            TextAction("nova", onNew, colors.brand, style = Eyebrow, horizontal = Space.sm)
         }
 
         Spacer(Modifier.height(Space.lg))
@@ -93,12 +90,10 @@ fun CategoriesScreen(
         state.error?.let { message ->
             Spacer(Modifier.height(Space.lg))
             Text(message, style = EntryMeta, color = colors.ink)
-            TextButton(onClick = onRetry, contentPadding = PaddingValues(0.dp)) {
-                Text("Tentar de novo", style = Eyebrow, color = colors.brand)
-            }
+            TextAction("Tentar de novo", onRetry, colors.brand, style = Eyebrow)
         }
 
-        Spacer(Modifier.height(Space.lg))
+        Spacer(Modifier.height(Space.sm))
 
         if (state.items.isEmpty() && !state.loading) {
             Text("Nenhuma categoria.", style = EntryTitle, color = colors.slate)
@@ -146,7 +141,7 @@ private fun CategoryRow(
     val meta = category.metaLine()
     val fade = if (category.active) 1f else 0.45f
 
-    Column(Modifier.fillMaxWidth().padding(top = Space.md, bottom = Space.xs)) {
+    Column(Modifier.fillMaxWidth().padding(top = Space.md)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
@@ -174,7 +169,10 @@ private fun CategoryRow(
             Arrow(glyph = "↓", label = "Descer ${category.name}", enabled = canGoDown, onClick = onDown)
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.sm),
+        ) {
             Action("editar", colors.brand, onEdit)
 
             if (!category.isDefault) {
@@ -187,12 +185,7 @@ private fun CategoryRow(
 
 @Composable
 private fun Action(label: String, color: Color, onClick: () -> Unit) {
-    TextButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(horizontal = Space.sm, vertical = 0.dp),
-    ) {
-        Text(label, style = Eyebrow, color = color)
-    }
+    TextAction(label, onClick, color, style = Eyebrow, horizontal = Space.sm)
 }
 
 @Composable

@@ -3,8 +3,10 @@ package com.archieapps.calendar.feature.calendar
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -77,12 +79,12 @@ private fun SpineEntry(
 
     val tappableNode = entry.isTask && entry.agency == Agency.Mine
 
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Spacer(
             Modifier
                 .width(gutter)
                 .then(if (tappableNode) Modifier.clickable(onClick = onToggle) else Modifier)
-                .height(nodeCenterY * 2 + Space.lg)
+                .fillMaxHeight()
                 .drawBehind {
                     val x = gutter.toPx() / 2
                     val cy = nodeCenterY.toPx()

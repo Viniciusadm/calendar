@@ -7,18 +7,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import com.archieapps.calendar.core.net.CategoryDto
-import com.archieapps.calendar.design.ButtonLabel
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
@@ -26,6 +21,7 @@ import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.colorFromValue
 import com.archieapps.calendar.design.components.Pill
+import com.archieapps.calendar.design.components.TextAction
 
 @Composable
 fun CategoryDeletePrompt(
@@ -39,7 +35,7 @@ fun CategoryDeletePrompt(
     val colors = LocalChronicle.current
     val summary = category.linkSummary()
 
-    Column(modifier = modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Space.lg)) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = Space.lg)) {
         Text("excluir ${category.name}", style = SheetTitle, color = colors.ink)
 
         Spacer(Modifier.height(Space.sm))
@@ -50,9 +46,8 @@ fun CategoryDeletePrompt(
             color = colors.slate,
         )
 
-        Spacer(Modifier.height(Space.xl))
-
         if (summary != null && targets.isNotEmpty()) {
+            Spacer(Modifier.height(Space.xl))
             Text("MOVER PARA", style = Eyebrow, color = colors.slate)
             Spacer(Modifier.height(Space.sm))
 
@@ -70,25 +65,19 @@ fun CategoryDeletePrompt(
                     )
                 }
             }
-
-            Spacer(Modifier.height(Space.xl))
         }
 
-        Action(
+        Spacer(Modifier.height(Space.md))
+
+        TextAction(
             label = if (summary == null) "Excluir" else "Excluir e deixar sem categoria",
-            color = colors.brand,
             onClick = onForce,
+            color = colors.brand,
+            stretch = true,
         )
 
-        Action("Cancelar", colors.slate, onDismiss)
+        TextAction("Cancelar", onDismiss, colors.slate, stretch = true)
 
-        Spacer(Modifier.height(Space.xl))
-    }
-}
-
-@Composable
-private fun Action(label: String, color: Color, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Text(label, style = ButtonLabel, color = color, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(Space.sm))
     }
 }
