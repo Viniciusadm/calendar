@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -146,7 +147,10 @@ private fun MonthHeader(
     val monthName = state.month.month.getDisplayName(JavaTextStyle.FULL, ptBr)
     val isCurrentMonth = state.month == YearMonth.now()
 
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+    Row(
+        modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = HeaderMinHeight),
+        verticalAlignment = Alignment.Bottom,
+    ) {
         Text(text = monthName, style = MonthTitle, color = colors.ink)
         Spacer(Modifier.width(Space.sm))
         Text(
@@ -203,6 +207,8 @@ private fun MonthPager(
         MonthGrid(month = monthOf(page), state = state, onSelect = onSelect)
     }
 }
+
+private val HeaderMinHeight = 48.dp
 
 private const val ANCHOR_PAGE = 1200
 

@@ -56,9 +56,12 @@ fun DayAgenda(
 private fun EmptyDay(modifier: Modifier = Modifier) {
     val colors = LocalChronicle.current
 
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = Space.xl)) {
-        Text("Nada marcado.", style = EntryTitle, color = colors.ink)
-    }
+    Text(
+        text = "Nada marcado.",
+        style = EntryTitle,
+        color = colors.ink,
+        modifier = modifier.fillMaxWidth().padding(bottom = Space.lg),
+    )
 }
 
 @Composable
