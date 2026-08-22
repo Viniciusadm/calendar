@@ -79,7 +79,7 @@ private fun SpineEntry(
     val colors = LocalChronicle.current
     val dim = entry.completed
 
-    val tappableNode = entry.isTask && entry.agency == Agency.Mine
+    val tappableNode = entry.togglable()
 
     Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Spacer(

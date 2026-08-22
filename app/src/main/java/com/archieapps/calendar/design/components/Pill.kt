@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -28,7 +28,7 @@ import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.Space
 
-private val pillShape = RoundedCornerShape(percent = 50)
+private val pillShape = RoundedCornerShape(Space.md)
 
 private const val borderAlpha = 0.55f
 
@@ -46,7 +46,7 @@ fun Pill(
         label = label,
         labelColor = if (selected) colors.brand else colors.slate,
         borderColor = if (selected) colors.brand.copy(alpha = borderAlpha) else colors.hairline,
-        background = if (selected) colors.brandSoft else Color.Transparent,
+        background = if (selected) colors.brandSoft else colors.surface,
         dot = dot,
         onClick = onClick,
         modifier = modifier.semantics { this.selected = selected },
@@ -61,11 +61,13 @@ fun Pill(
     dot: Color? = null,
     modifier: Modifier = Modifier,
 ) {
+    val colors = LocalChronicle.current
+
     PillBody(
         label = label,
         labelColor = tint,
         borderColor = tint.copy(alpha = borderAlpha),
-        background = Color.Transparent,
+        background = colors.surface,
         dot = dot,
         onClick = onClick,
         modifier = modifier,

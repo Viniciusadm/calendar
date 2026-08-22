@@ -60,6 +60,14 @@ data class CalendarEntry(
     val hasOwnDueDate: Boolean get() = dueDate != null && dueDate != date
 }
 
+fun CalendarEntry.togglable(today: LocalDate = LocalDate.now()): Boolean {
+    if (!isTask || !editable || agency != Agency.Mine) {
+        return false
+    }
+
+    return completed || date <= today
+}
+
 fun OccurrenceDto.toEntry(): CalendarEntry {
     val agency = when {
         nature == "milestone" -> Agency.Happened

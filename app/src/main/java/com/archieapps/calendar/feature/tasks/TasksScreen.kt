@@ -184,6 +184,7 @@ fun TasksScreen(
             contentPadding = PaddingValues(
                 start = Space.lg,
                 end = Space.lg,
+                top = Space.md,
                 bottom = Space.xxl,
             ),
         ) {
@@ -228,7 +229,7 @@ fun TasksScreen(
                 }
             }
 
-            items(state.rows, key = { it.id }) { entry ->
+            items(state.rows, key = { it.id }, contentType = { "task" }) { entry ->
                 TaskRowItem(
                     entry = entry,
                     today = today,

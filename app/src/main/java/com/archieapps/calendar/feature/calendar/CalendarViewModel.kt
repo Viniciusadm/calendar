@@ -392,7 +392,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     }
 
     fun toggleCompletion(entry: CalendarEntry) {
-        if (!entry.isTask || entry.agency != Agency.Mine) return
+        if (!entry.togglable()) return
 
         _state.update { it.copy(saving = true) }
 

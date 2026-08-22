@@ -3,6 +3,7 @@ package com.archieapps.calendar.feature.tasks
 import com.archieapps.calendar.core.net.TaskSummaryDto
 import com.archieapps.calendar.feature.calendar.CalendarEntry
 import com.archieapps.calendar.feature.calendar.Recurrence
+import com.archieapps.calendar.feature.calendar.togglable
 import com.archieapps.calendar.feature.calendar.relativeDays
 import com.archieapps.calendar.feature.calendar.shortDate
 import java.time.LocalDate
@@ -86,14 +87,6 @@ data class TaskListState(
         get() = priorities.sorted().joinToString(",").ifBlank { null }
 
     fun countOf(filter: TaskFilter): Int? = summary?.counts?.get(filter.value)
-}
-
-fun CalendarEntry.togglable(today: LocalDate = LocalDate.now()): Boolean {
-    if (!isTask || !editable) {
-        return false
-    }
-
-    return completed || date <= today
 }
 
 fun List<CalendarEntry>.patchRowCompletion(occurrenceId: String, completed: Boolean): List<CalendarEntry> =

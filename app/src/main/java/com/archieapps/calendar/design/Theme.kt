@@ -1,6 +1,7 @@
 package com.archieapps.calendar.design
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -96,7 +97,10 @@ fun CalendarTheme(
 
     val chronicle = if (darkTheme) darkChronicle else lightChronicle
 
-    CompositionLocalProvider(LocalChronicle provides chronicle) {
+    CompositionLocalProvider(
+        LocalChronicle provides chronicle,
+        LocalContentColor provides chronicle.ink,
+    ) {
         MaterialTheme(
             colorScheme = if (darkTheme) darkScheme else lightScheme,
             typography = ChronicleTypography,

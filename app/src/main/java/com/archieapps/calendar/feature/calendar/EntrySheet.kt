@@ -89,7 +89,7 @@ fun EntrySheet(
             ) {
                 Pill("editar", onEdit, colors.ink)
 
-                if (entry.isTask) {
+                if (entry.togglable()) {
                     Pill(if (entry.completed) "reabrir" else "concluir", onToggleCompletion, colors.brand)
                 }
 
