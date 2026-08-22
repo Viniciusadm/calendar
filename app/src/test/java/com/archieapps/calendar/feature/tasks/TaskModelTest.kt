@@ -61,11 +61,13 @@ class TaskModelTest {
     @Test
     fun `filter values match the api contract`() {
         assertEquals(
-            listOf("pending", "today", "upcoming", "overdue", "all", "done"),
+            listOf("today", "upcoming", "overdue", "done"),
             TaskFilter.entries.map { it.value },
         )
-        assertEquals(TaskFilter.Pending, TaskFilter.of(null))
-        assertEquals(TaskFilter.Pending, TaskFilter.of("nope"))
+        assertEquals(TaskFilter.Today, TaskFilter.of(null))
+        assertEquals(TaskFilter.Today, TaskFilter.of("nope"))
+        assertEquals(TaskFilter.Today, TaskFilter.of("pending"))
+        assertEquals(TaskFilter.Today, TaskFilter.of("all"))
         assertEquals(TaskFilter.Overdue, TaskFilter.of("overdue"))
         assertTrue(TaskFilter.Done.isHistory)
     }

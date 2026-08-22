@@ -9,18 +9,16 @@ import com.archieapps.calendar.feature.calendar.shortDate
 import java.time.LocalDate
 
 enum class TaskFilter(val value: String, val label: String) {
-    Pending("pending", "pendentes"),
     Today("today", "hoje"),
     Upcoming("upcoming", "próximas"),
     Overdue("overdue", "atrasadas"),
-    All("all", "todas"),
     Done("done", "concluídas");
 
     val isHistory: Boolean get() = this == Done
 
     companion object {
         fun of(value: String?): TaskFilter =
-            entries.firstOrNull { it.value == value } ?: Pending
+            entries.firstOrNull { it.value == value } ?: Today
     }
 }
 
@@ -45,7 +43,7 @@ data class TaskUndo(
 )
 
 data class TaskListState(
-    val filter: TaskFilter = TaskFilter.Pending,
+    val filter: TaskFilter = TaskFilter.Today,
     val draftQuery: String = "",
     val query: String = "",
     val categoryIds: Set<Int> = emptySet(),

@@ -39,7 +39,7 @@ class Settings(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_WEEK_START, value).apply()
 
     var initialTaskFilter: String
-        get() = prefs.getString(KEY_TASK_FILTER, "pending") ?: "pending"
+        get() = prefs.getString(KEY_TASK_FILTER, "today") ?: "today"
         set(value) = prefs.edit().putString(KEY_TASK_FILTER, value).apply()
 
     var expandRecurringInGrid: Boolean

@@ -15,15 +15,14 @@ val weekStartChoices: List<Pair<String, String>> = listOf(
 )
 
 val initialFilterChoices: List<Pair<String, String>> = listOf(
-    "pending" to "pendentes",
     "today" to "hoje",
-    "all" to "todas",
+    "upcoming" to "próximas",
 )
 
 data class Preferences(
     val themeMode: String = Settings.THEME_SYSTEM,
     val weekStartsMonday: Boolean = false,
-    val initialTaskFilter: String = "pending",
+    val initialTaskFilter: String = "today",
     val expandRecurringInGrid: Boolean = false,
     val digestEnabled: Boolean = false,
     val digestMinuteOfDay: Int = Settings.DEFAULT_DIGEST_AT,

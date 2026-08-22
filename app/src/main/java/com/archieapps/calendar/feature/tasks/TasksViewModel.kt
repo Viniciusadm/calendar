@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 
 class TasksViewModel(
     private val api: CalendarApi,
-    initialFilter: TaskFilter = TaskFilter.Pending,
+    initialFilter: TaskFilter = TaskFilter.Today,
 ) : ViewModel() {
     private val _state = MutableStateFlow(TaskListState(filter = initialFilter))
     val state: StateFlow<TaskListState> = _state.asStateFlow()

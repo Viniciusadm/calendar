@@ -325,11 +325,9 @@ private fun summaryLine(summary: TaskSummaryDto?): String {
 }
 
 private fun emptyHeadline(filter: TaskFilter): String = when (filter) {
-    TaskFilter.Pending -> "Dia limpo."
-    TaskFilter.Today -> "Nada para hoje."
+    TaskFilter.Today -> "Dia limpo."
     TaskFilter.Upcoming -> "Nada à frente."
     TaskFilter.Overdue -> "Nada atrasado."
-    TaskFilter.All -> "Nenhuma tarefa ainda."
     TaskFilter.Done -> "Nada concluído ainda."
 }
 

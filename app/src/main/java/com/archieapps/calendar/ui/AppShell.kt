@@ -225,7 +225,7 @@ private fun Shell(
             if (leaf == Leaf.Root) {
                 TabBar(
                     items = Tab.entries.map { entry ->
-                        entry.item(badge = if (entry == Tab.Tasks) tasksState.countOf(TaskFilter.Pending) else null)
+                        entry.item(badge = if (entry == Tab.Tasks) tasksState.countOf(TaskFilter.Today) else null)
                     },
                     selected = tab.ordinal,
                     onSelect = { index -> tab = Tab.entries[index] },
