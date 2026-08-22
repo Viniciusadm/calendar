@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -43,7 +44,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -65,7 +68,6 @@ import com.archieapps.calendar.design.components.Glyph
 import com.archieapps.calendar.feature.calendar.CalendarEntry
 import com.archieapps.calendar.feature.calendar.TaskAction
 import com.archieapps.calendar.feature.calendar.togglable
-import com.composables.icons.lucide.AppWindow
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.ExternalLink
 import com.composables.icons.lucide.Lucide
@@ -79,6 +81,7 @@ private val nodeBox = 40.dp
 private val nodeDiameter = 24.dp
 private val ringWidth = 2.dp
 private val chevronBox = 40.dp
+private val actionIcon = 22.dp
 
 private const val pressScale = 0.98f
 private const val pressLift = 0.55f
@@ -244,6 +247,7 @@ fun TaskRowItem(
         entry.action?.let { action ->
             ActionTarget(
                 action = action,
+                dim = entry.completed,
                 onClick = {
                     if (!TaskActions.launch(context, action)) {
                         onActionFailed(action)
@@ -344,11 +348,15 @@ private fun PriorityDot(priority: String, hidden: Boolean) {
 }
 
 @Composable
-private fun ActionTarget(action: TaskAction, onClick: () -> Unit) {
+private fun ActionTarget(action: TaskAction, dim: Boolean, onClick: () -> Unit) {
     val colors = LocalChronicle.current
     val context = LocalContext.current
+    val iconPx = with(LocalDensity.current) { actionIcon.roundToPx() }
     val caption = remember(action) {
         action.caption(if (action.isApp) TaskActions.appLabel(context, action.target) else null)
+    }
+    val badge = remember(action, iconPx, dim) {
+        if (action.isApp) TaskActions.roundIcon(context, action.target, iconPx, dim) else null
     }
 
     Box(
@@ -366,11 +374,19 @@ private fun ActionTarget(action: TaskAction, onClick: () -> Unit) {
             .semantics { contentDescription = "Abrir $caption" },
         contentAlignment = Alignment.Center,
     ) {
-        Glyph(
-            icon = if (action.isApp) Lucide.AppWindow else Lucide.ExternalLink,
-            tint = colors.brand,
-            size = 17.dp,
-        )
+        if (badge == null) {
+            Glyph(
+                icon = Lucide.ExternalLink,
+                tint = if (dim) colors.slate else colors.brand,
+                size = 17.dp,
+            )
+        } else {
+            Image(
+                bitmap = badge.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.size(actionIcon),
+            )
+        }
     }
 }
 

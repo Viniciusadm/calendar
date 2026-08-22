@@ -11,7 +11,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
 import androidx.glance.LocalSize
 import androidx.glance.ImageProvider
 import androidx.glance.action.actionParametersOf
@@ -36,6 +38,7 @@ import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
+import androidx.glance.layout.size
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
@@ -45,6 +48,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.archieapps.calendar.MainActivity
 import com.archieapps.calendar.R
+import com.archieapps.calendar.core.action.TaskActions
 import com.archieapps.calendar.core.store.Settings
 import com.archieapps.calendar.core.store.TaskSnapshot
 import com.archieapps.calendar.core.store.TaskSnapshotRow
@@ -54,6 +58,7 @@ import com.archieapps.calendar.design.ThemeMode
 import com.archieapps.calendar.design.TokenSuccess
 import com.archieapps.calendar.design.TokenWarning
 import com.archieapps.calendar.design.chronicleColors
+import com.archieapps.calendar.feature.calendar.ActionKind
 import com.archieapps.calendar.design.colorFromValue
 import com.archieapps.calendar.feature.settings.readPreferences
 import com.archieapps.calendar.feature.settings.theme
@@ -223,7 +228,7 @@ private fun TaskCard(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(ImageProvider(skin.card))
-                .padding(end = 4.dp),
+                .padding(end = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Stripe(row = row, skin = skin)
@@ -301,22 +306,48 @@ private fun Stripe(row: TaskSnapshotRow, skin: WidgetSkin) {
 private fun ActionGlyph(context: Context, row: TaskSnapshotRow, skin: WidgetSkin) {
     val intent = actionIntent(context, row) ?: return
 
+    val badge = remember(row.actionTarget, row.completed) {
+        if (row.actionType == ActionKind.App && row.actionTarget != null) {
+            TaskActions.roundIcon(context, row.actionTarget, actionIconPx(context), row.completed)
+        } else {
+            null
+        }
+    }
+
     Box(
-        modifier = GlanceModifier.padding(horizontal = 6.dp).clickable(actionStartIntent(intent)),
+        modifier = GlanceModifier.size(actionBox).clickable(actionStartIntent(intent)),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = if (row.actionType == "app") "▣" else "↗",
-            style = TextStyle(color = skin.brand, fontSize = 15.sp),
-        )
+        if (badge == null) {
+            Image(
+                provider = ImageProvider(
+                    if (row.actionType == ActionKind.App) R.drawable.ic_action_app else R.drawable.ic_action_link
+                ),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(if (row.completed) skin.slate else skin.brand),
+                modifier = GlanceModifier.size(actionIcon),
+            )
+        } else {
+            Image(
+                provider = ImageProvider(badge),
+                contentDescription = null,
+                modifier = GlanceModifier.size(actionIcon),
+            )
+        }
     }
 }
+
+private val actionBox = 30.dp
+private val actionIcon = 20.dp
+
+private fun actionIconPx(context: Context): Int =
+    (actionIcon.value * context.resources.displayMetrics.density).toInt()
 
 private fun actionIntent(context: Context, row: TaskSnapshotRow): Intent? {
     val type = row.actionType ?: return null
     val target = row.actionTarget?.takeIf { it.isNotBlank() } ?: return null
 
-    val intent = if (type == "app") {
+    val intent = if (type == ActionKind.App) {
         context.packageManager.getLaunchIntentForPackage(target)
     } else {
         runCatching { Intent(Intent.ACTION_VIEW, android.net.Uri.parse(target)) }.getOrNull()
