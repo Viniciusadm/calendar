@@ -206,6 +206,7 @@ class AgendaViewModel(private val api: CalendarApi) : ViewModel() {
                 categories = filters.categoriesParam,
                 kinds = filters.kindsParam,
                 natures = filters.naturesParam,
+                noPriorityTasks = IDLE_NEVER,
             )
 
             if (token != generation) {
@@ -245,3 +246,5 @@ class AgendaViewModel(private val api: CalendarApi) : ViewModel() {
 private const val searchSettleMs = 320L
 
 private const val filterSettleMs = 250L
+
+private const val IDLE_NEVER = "never"

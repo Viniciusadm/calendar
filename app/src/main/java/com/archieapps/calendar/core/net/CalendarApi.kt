@@ -98,6 +98,7 @@ class CalendarApi(private val settings: Settings) {
         categories: String? = null,
         kinds: String? = null,
         natures: String? = null,
+        noPriorityTasks: String? = null,
         limit: Int = 30,
     ): ApiResult<List<OccurrenceDto>> =
         send("GET", "/api/calendar/events/feed", buildMap {
@@ -108,6 +109,7 @@ class CalendarApi(private val settings: Settings) {
             if (categories != null) put("categories", categories)
             if (kinds != null) put("kinds", kinds)
             if (natures != null) put("natures", natures)
+            if (noPriorityTasks != null) put("noPriorityTasks", noPriorityTasks)
         }) { json.decodeFromString<Envelope<List<OccurrenceDto>>>(it).let { e -> e.success to (e.body to e.misc) } }
 
     suspend fun categories(
