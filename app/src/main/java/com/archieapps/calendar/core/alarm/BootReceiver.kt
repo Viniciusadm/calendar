@@ -14,5 +14,6 @@ class BootReceiver : BroadcastReceiver() {
 
         Notifications.ensureChannel(context)
         AlarmScheduler(context).rescheduleFromCache()
+        DigestScheduler(context).sync()
     }
 }

@@ -36,10 +36,25 @@ data class CalendarState(
     val unlocking: Boolean = false,
     val unlockError: String? = null,
     val askCode: Boolean = false,
+    val expandRecurringTasks: Boolean = false,
+    val dayFill: Map<LocalDate, List<CalendarEntry>> = emptyMap(),
 ) {
     fun entriesFor(month: YearMonth): Map<LocalDate, List<CalendarEntry>> = months[month].orEmpty()
 
-    val selectedEntries: List<CalendarEntry> get() = entriesFor(month)[selected].orEmpty()
+    val selectedEntries: List<CalendarEntry>
+        get() {
+            val grid = entriesFor(month)[selected].orEmpty()
+            val extra = dayFill[selected].orEmpty()
+
+            if (extra.isEmpty()) {
+                return grid
+            }
+
+            val known = grid.mapTo(mutableSetOf()) { it.id }
+
+            return (grid + extra.filterNot { known.contains(it.id) })
+                .sortedWith(compareBy({ it.allDay.not() }, { it.clock ?: "" }, { it.title }))
+        }
 }
 
 fun LocalDate.carriedInto(month: YearMonth): LocalDate {
@@ -51,7 +66,7 @@ fun LocalDate.carriedInto(month: YearMonth): LocalDate {
 }
 
 fun YearMonth.gridStart(): LocalDate =
-    atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+    atDay(1).with(TemporalAdjusters.previousOrSame(WeekStart.firstDay))
 
 fun YearMonth.gridDays(): List<LocalDate> {
     val start = gridStart()
@@ -66,6 +81,8 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     private var loadJob: Job? = null
 
     private var detailJob: Job? = null
+
+    private var dayJob: Job? = null
 
     init {
         _state.update { it.copy(unlocked = AccessCode.present) }
@@ -100,7 +117,19 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         ensure(_state.value.month, force = true, settle = false)
     }
 
-    fun select(date: LocalDate) = _state.update { it.copy(selected = date) }
+    fun select(date: LocalDate) {
+        _state.update { it.copy(selected = date) }
+        fillDay(date)
+    }
+
+    fun setExpandRecurringTasks(expand: Boolean) {
+        if (_state.value.expandRecurringTasks == expand) {
+            return
+        }
+
+        _state.update { it.copy(expandRecurringTasks = expand, dayFill = emptyMap()) }
+        ensure(_state.value.month, force = true, settle = false)
+    }
 
     fun showMonth(month: YearMonth) = goTo(month, settle = true)
 
@@ -159,7 +188,13 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
 
         if (visible) _state.update { it.copy(loading = true, error = null) }
 
-        return when (val result = api.occurrences(start.toString(), end.toString())) {
+        return when (
+            val result = api.occurrences(
+                start = start.toString(),
+                end = end.toString(),
+                recurringTasks = recurringTaskMode(),
+            )
+        ) {
             is ApiResult.Ok -> {
                 val byDate = result.value.map { dto -> dto.toEntry() }.groupBy { entry -> entry.date }
 
@@ -174,10 +209,13 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
 
                     current.copy(
                         months = cache,
+                        dayFill = emptyMap(),
                         loading = if (visible) false else current.loading,
                         error = if (visible) null else current.error,
                     )
                 }
+
+                fillDay(_state.value.selected)
 
                 true
             }
@@ -192,6 +230,45 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
                 }
 
                 false
+            }
+        }
+    }
+
+    private fun recurringTaskMode(): String? =
+        if (_state.value.expandRecurringTasks) null else "today"
+
+    private fun fillDay(date: LocalDate) {
+        val snapshot = _state.value
+
+        if (snapshot.expandRecurringTasks || date == LocalDate.now() || snapshot.dayFill.containsKey(date)) {
+            return
+        }
+
+        dayJob?.cancel()
+        dayJob = viewModelScope.launch {
+            delay(DAY_SETTLE_MS)
+
+            val result = api.occurrences(
+                start = date.toString(),
+                end = date.toString(),
+                natures = "task",
+                recurringTasks = "window",
+            )
+
+            if (result !is ApiResult.Ok) {
+                return@launch
+            }
+
+            val recurring = result.value
+                .filter { it.recurring && it.nature == "task" }
+                .map { it.toEntry() }
+
+            _state.update { current ->
+                if (current.dayFill.containsKey(date)) {
+                    current
+                } else {
+                    current.copy(dayFill = current.dayFill + (date to recurring))
+                }
             }
         }
     }
@@ -245,12 +322,21 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
     }
 
     fun newEvent() {
+        openDraft(isTask = false)
+    }
+
+    fun newTask() {
+        openDraft(isTask = true)
+    }
+
+    private fun openDraft(isTask: Boolean) {
         val snapshot = _state.value
         val fallback = snapshot.categories.firstOrNull { it.isDefault }?.id
+        val anchor = if (isTask) LocalDate.now() else snapshot.selected
 
         _state.update {
             it.copy(
-                draft = EventDraft.forDay(snapshot.selected, fallback),
+                draft = EventDraft.forDay(anchor, fallback).copy(isTask = isTask),
                 focused = null,
                 focusedDetail = DetailState.Absent,
             )
@@ -349,6 +435,8 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         }
     }
 }
+
+private const val DAY_SETTLE_MS = 220L
 
 private const val PREFETCH_RADIUS = 2
 

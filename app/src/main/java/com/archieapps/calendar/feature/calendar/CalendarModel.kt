@@ -50,8 +50,15 @@ data class CalendarEntry(
     val remindersMuted: Boolean,
     val recurring: Boolean,
     val recurrenceRule: String?,
+    val recurrenceEndsAt: LocalDate?,
+    val dueDate: LocalDate?,
+    val overdue: Boolean,
+    val bucket: String?,
+    val streak: Int?,
     val editable: Boolean,
-)
+) {
+    val hasOwnDueDate: Boolean get() = dueDate != null && dueDate != date
+}
 
 fun OccurrenceDto.toEntry(): CalendarEntry {
     val agency = when {
@@ -83,7 +90,12 @@ fun OccurrenceDto.toEntry(): CalendarEntry {
         overridden = overridden,
         remindersMuted = remindersMuted,
         recurring = recurring,
-        recurrenceRule = meta?.get("recurrence")?.jsonPrimitive?.contentOrNull,
+        recurrenceRule = recurrence ?: meta?.get("recurrence")?.jsonPrimitive?.contentOrNull,
+        recurrenceEndsAt = recurrenceEndsAt?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+        dueDate = dueDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+        overdue = overdue,
+        bucket = bucket,
+        streak = streak,
         editable = editable,
     )
 }

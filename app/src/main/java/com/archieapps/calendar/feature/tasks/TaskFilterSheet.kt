@@ -1,4 +1,4 @@
-package com.archieapps.calendar.feature.agenda
+package com.archieapps.calendar.feature.tasks
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,23 +16,24 @@ import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.colorFromValue
-import com.archieapps.calendar.design.components.DateStepper
 import com.archieapps.calendar.design.components.Pill
 import com.archieapps.calendar.design.components.ScrollingPills
 import com.archieapps.calendar.design.components.Section
 import com.archieapps.calendar.design.components.TextAction
-import java.time.LocalDate
+
+val taskPriorities: List<Pair<String, String>> = listOf(
+    "high" to "alta",
+    "medium" to "média",
+    "low" to "baixa",
+    "none" to "nenhuma",
+)
 
 @Composable
-fun AgendaFilterSheet(
-    filters: AgendaFilters,
+fun TaskFilterSheet(
+    state: TaskListState,
     categories: List<CategoryDto>,
-    onFrom: (LocalDate) -> Unit,
-    onToday: () -> Unit,
-    onPickMonth: () -> Unit,
     onToggleCategory: (Int) -> Unit,
-    onToggleKind: (String) -> Unit,
-    onToggleNature: (String) -> Unit,
+    onTogglePriority: (String) -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -48,22 +49,8 @@ fun AgendaFilterSheet(
 
             Spacer(Modifier.weight(1f))
 
-            if (filters.activeCount > 0) {
+            if (state.activeFilterCount > 0) {
                 TextAction("limpar", onClear, colors.brand, style = Eyebrow, horizontal = Space.sm)
-            }
-        }
-
-        Section("a partir de", top = Space.xl)
-
-        DateStepper(date = filters.from, onPick = onFrom, months = true)
-
-        Spacer(Modifier.height(Space.sm))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextAction("escolher mês", onPickMonth, colors.brand, style = Eyebrow, horizontal = Space.sm)
-
-            if (!filters.anchoredToday) {
-                TextAction("hoje", onToday, colors.brand, style = Eyebrow, horizontal = Space.sm)
             }
         }
 
@@ -74,7 +61,7 @@ fun AgendaFilterSheet(
                 categories.forEach { category ->
                     Pill(
                         label = category.name,
-                        selected = filters.categoryIds.contains(category.id),
+                        selected = state.categoryIds.contains(category.id),
                         onClick = { onToggleCategory(category.id) },
                         dot = colorFromValue(category.color),
                     )
@@ -82,26 +69,14 @@ fun AgendaFilterSheet(
             }
         }
 
-        Section("tipos", top = Space.xl)
+        Section("prioridade", top = Space.xl)
 
         ScrollingPills {
-            agendaKinds.forEach { (value, label) ->
+            taskPriorities.forEach { (value, label) ->
                 Pill(
                     label = label,
-                    selected = filters.kinds.contains(value),
-                    onClick = { onToggleKind(value) },
-                )
-            }
-        }
-
-        Section("natureza", top = Space.xl)
-
-        ScrollingPills {
-            agendaNatures.forEach { (value, label) ->
-                Pill(
-                    label = label,
-                    selected = filters.natures.contains(value),
-                    onClick = { onToggleNature(value) },
+                    selected = state.priorities.contains(value),
+                    onClick = { onTogglePriority(value) },
                 )
             }
         }
@@ -109,4 +84,3 @@ fun AgendaFilterSheet(
         Spacer(Modifier.height(Space.xxl))
     }
 }
-

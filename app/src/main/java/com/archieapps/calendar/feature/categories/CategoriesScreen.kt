@@ -39,6 +39,7 @@ import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
 import com.archieapps.calendar.design.colorFromValue
 import com.archieapps.calendar.design.components.CircleButton
+import com.archieapps.calendar.design.components.Hairline
 import com.archieapps.calendar.design.components.TextAction
 
 @Composable
@@ -204,14 +205,3 @@ private fun Arrow(glyph: String, label: String, enabled: Boolean, onClick: () ->
     )
 }
 
-@Composable
-private fun Hairline() {
-    val colors = LocalChronicle.current
-
-    Spacer(
-        Modifier
-            .fillMaxWidth()
-            .height(Stroke.hairline)
-            .drawBehind { drawLine(colors.hairline, Offset(0f, 0f), Offset(size.width, 0f), size.height) }
-    )
-}

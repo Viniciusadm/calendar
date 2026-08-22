@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Calendar</string>
+    <string name="widget_today_tasks">Tarefas de hoje</string>
 </resources>

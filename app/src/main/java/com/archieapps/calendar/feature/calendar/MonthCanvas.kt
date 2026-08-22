@@ -33,7 +33,7 @@ import com.archieapps.calendar.design.WeekdayLabel
 import java.time.LocalDate
 import java.time.YearMonth
 
-private val weekdayInitials = listOf("D", "S", "T", "Q", "Q", "S", "S")
+
 
 private val DayDisc = 34.dp
 
@@ -42,7 +42,7 @@ fun WeekdayStrip(modifier: Modifier = Modifier) {
     val colors = LocalChronicle.current
 
     Row(modifier = modifier.fillMaxWidth()) {
-        weekdayInitials.forEach { initial ->
+        WeekStart.initials().forEach { initial ->
             Text(
                 text = initial,
                 style = WeekdayLabel,

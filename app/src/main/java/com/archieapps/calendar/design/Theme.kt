@@ -81,11 +81,19 @@ private val darkScheme = darkColorScheme(
     error = TokenDestructive,
 )
 
+enum class ThemeMode { System, Light, Dark }
+
 @Composable
 fun CalendarTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    mode: ThemeMode = ThemeMode.System,
     content: @Composable () -> Unit,
 ) {
+    val darkTheme = when (mode) {
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+        ThemeMode.System -> isSystemInDarkTheme()
+    }
+
     val chronicle = if (darkTheme) darkChronicle else lightChronicle
 
     CompositionLocalProvider(LocalChronicle provides chronicle) {

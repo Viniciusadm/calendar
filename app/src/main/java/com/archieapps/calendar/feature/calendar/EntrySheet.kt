@@ -33,7 +33,9 @@ import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
+import com.archieapps.calendar.design.components.Hairline
 import com.archieapps.calendar.design.components.Pill
+import com.archieapps.calendar.design.components.Section
 import java.time.LocalDate
 
 private val priorityLabels = mapOf("low" to "baixa", "medium" to "média", "high" to "alta")
@@ -130,7 +132,7 @@ private fun Blocks(entry: CalendarEntry, detail: EntryDetail) {
     }
 
     detail.progress?.let { progress ->
-        Section("progresso")
+        Section("progresso", top = Space.lg)
 
         LinearProgressIndicator(
             progress = { progress.fraction },
@@ -144,12 +146,12 @@ private fun Blocks(entry: CalendarEntry, detail: EntryDetail) {
     }
 
     detail.note?.let { note ->
-        Section("sobre")
+        Section("sobre", top = Space.lg)
         Text(note, style = EntryTitle, color = colors.ink)
     }
 
     if (detail.contacts.isNotEmpty()) {
-        Section("contato")
+        Section("contato", top = Space.lg)
 
         detail.contacts.forEach { contact ->
             Text(contact, style = EntryTitle, color = colors.ink, modifier = Modifier.padding(bottom = Space.xs))
@@ -162,7 +164,7 @@ private fun Blocks(entry: CalendarEntry, detail: EntryDetail) {
     }
 
     if (detail.next.isNotEmpty()) {
-        Section("próximas")
+        Section("próximas", top = Space.lg)
 
         detail.next.forEach { occurrence ->
             Row(
@@ -183,7 +185,7 @@ private fun Blocks(entry: CalendarEntry, detail: EntryDetail) {
     }
 
     if (detail.reminders.isNotEmpty()) {
-        Section("lembrete")
+        Section("lembrete", top = Space.lg)
 
         detail.reminders.forEach { label ->
             Text(label, style = EntryTitle, color = colors.ink)
@@ -191,7 +193,7 @@ private fun Blocks(entry: CalendarEntry, detail: EntryDetail) {
     }
 
     if (detail.items.isNotEmpty()) {
-        Section("checklist")
+        Section("checklist", top = Space.lg)
 
         detail.items.forEach { item ->
             Row(
@@ -207,27 +209,6 @@ private fun Blocks(entry: CalendarEntry, detail: EntryDetail) {
             }
         }
     }
-}
-
-@Composable
-private fun Section(label: String) {
-    val colors = LocalChronicle.current
-
-    Spacer(Modifier.height(Space.lg))
-    Text(label.uppercase(), style = Eyebrow, color = colors.slate)
-    Spacer(Modifier.height(Space.sm))
-}
-
-@Composable
-private fun Hairline() {
-    val colors = LocalChronicle.current
-
-    Spacer(
-        Modifier
-            .fillMaxWidth()
-            .height(Stroke.hairline)
-            .drawBehind { drawLine(colors.hairline, Offset(0f, 0f), Offset(size.width, 0f), size.height) }
-    )
 }
 
 @Composable

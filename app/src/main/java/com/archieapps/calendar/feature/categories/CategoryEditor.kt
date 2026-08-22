@@ -29,6 +29,7 @@ import com.archieapps.calendar.design.paletteTokens
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
 import com.archieapps.calendar.design.components.ScrollingPills
+import com.archieapps.calendar.design.components.Section
 import com.archieapps.calendar.design.components.TextAction
 
 @Composable
@@ -149,16 +150,6 @@ fun CategoryEditor(
         }
 
         Spacer(Modifier.height(Space.xl))
-    }
-}
-
-@Composable
-private fun Section(label: String) {
-    val colors = LocalChronicle.current
-
-    Column {
-        Text(label.uppercase(), style = Eyebrow, color = colors.slate)
-        Spacer(Modifier.height(Space.sm))
     }
 }
 

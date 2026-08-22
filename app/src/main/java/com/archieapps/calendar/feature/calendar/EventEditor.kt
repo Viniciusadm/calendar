@@ -32,8 +32,9 @@ import com.archieapps.calendar.design.components.CircleButton
 import com.archieapps.calendar.design.components.DateStepper
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
-import com.archieapps.calendar.design.components.ScrollingPills
 import com.archieapps.calendar.design.components.PillRow
+import com.archieapps.calendar.design.components.ScrollingPills
+import com.archieapps.calendar.design.components.Section
 import com.archieapps.calendar.design.components.Stepper
 import com.archieapps.calendar.design.components.TextAction
 import java.time.LocalDate
@@ -77,6 +78,15 @@ fun EventEditor(
             textStyle = SheetTitle,
         )
 
+        Spacer(Modifier.height(Space.md))
+
+        HairlineField(
+            value = draft.description,
+            onValueChange = { value -> onChange { it.copy(description = value) } },
+            label = "detalhes",
+            placeholder = "opcional",
+        )
+
         Spacer(Modifier.height(Space.xl))
         Section("tipo")
         PillRow {
@@ -113,8 +123,41 @@ fun EventEditor(
             }
         }
 
+        if (draft.isTask) {
+            Spacer(Modifier.height(Space.xl))
+            Section("prazo")
+
+            PillRow {
+                Pill("vence no dia", !draft.hasDeadline, { onChange { it.copy(dueOffsetDays = 0) } })
+                Pill("outra data", draft.hasDeadline, { onChange { it.onDueDate(it.date.plusDays(1)) } })
+            }
+
+            if (draft.hasDeadline) {
+                Spacer(Modifier.height(Space.md))
+
+                DateStepper(
+                    date = draft.dueDate,
+                    onPick = { due -> onChange { it.onDueDate(due) } },
+                    months = true,
+                )
+
+                Spacer(Modifier.height(Space.sm))
+
+                Text(
+                    text = deadlineCaption(draft),
+                    style = EntryMeta,
+                    color = colors.slate,
+                )
+            }
+        }
+
         Spacer(Modifier.height(Space.xl))
-        RepeatFields(draft, onChange)
+        RepeatFields(
+            date = draft.date,
+            rule = draft.recurrence,
+            onDate = { date -> onChange { it.onDate(date) } },
+            onRule = { transform -> onChange { it.withRecurrence(transform) } },
+        )
 
         if (categories.isNotEmpty()) {
             Spacer(Modifier.height(Space.xl))
@@ -173,131 +216,9 @@ fun EventEditor(
     }
 }
 
-@Composable
-private fun RepeatFields(draft: EventDraft, onChange: ((EventDraft) -> EventDraft) -> Unit) {
-    val colors = LocalChronicle.current
-    val rule = draft.recurrence
+private fun deadlineCaption(draft: EventDraft): String {
+    val days = draft.dueOffsetDays
+    val span = if (days == 1) "1 dia depois" else "$days dias depois"
 
-    Section("repetir")
-    ScrollingPills {
-        Pill("não repete", !rule.repeats, { onChange { it.withUnit(null) } })
-
-        RepeatUnit.entries.forEach { unit ->
-            Pill(unit.one, rule.unit == unit, { onChange { it.withUnit(unit) } })
-        }
-    }
-
-    val unit = rule.unit ?: return
-
-    Spacer(Modifier.height(Space.lg))
-    Section("a cada")
-    Stepper(
-        value = rule.interval,
-        onChange = { value -> onChange { it.withRecurrence { current -> current.copy(interval = value) } } },
-        unit = if (rule.interval == 1) unit.one else unit.many,
-        min = 1,
-        max = Recurrence.MAX_INTERVAL,
-    )
-
-    if (unit == RepeatUnit.Week) {
-        Spacer(Modifier.height(Space.lg))
-        Section("nos dias")
-        ScrollingPills {
-            weekOrder.forEach { day ->
-                Pill(
-                    label = weekdayShort(day),
-                    selected = day in rule.weekdays,
-                    onClick = {
-                        onChange {
-                            it.withRecurrence { current ->
-                                val days = if (day in current.weekdays) {
-                                    current.weekdays - day
-                                } else {
-                                    current.weekdays + day
-                                }
-
-                                current.copy(weekdays = days)
-                            }
-                        }
-                    },
-                )
-            }
-        }
-    }
-
-    if (unit == RepeatUnit.Month) {
-        Spacer(Modifier.height(Space.lg))
-        Section("no mês")
-        ScrollingPills {
-            Pill(
-                label = "todo dia ${draft.date.dayOfMonth}",
-                selected = rule.monthlyMode == MonthlyMode.DayOfMonth,
-                onClick = { onChange { it.withRecurrence { c -> c.copy(monthlyMode = MonthlyMode.DayOfMonth) } } },
-            )
-            Pill(
-                label = "toda ${ordinalLabel(ordinalOf(draft.date))} ${weekdayName(draft.date.dayOfWeek)}",
-                selected = rule.monthlyMode == MonthlyMode.WeekdayOfMonth,
-                onClick = { onChange { it.withRecurrence { c -> c.copy(monthlyMode = MonthlyMode.WeekdayOfMonth) } } },
-            )
-        }
-
-        if (rule.monthlyMode == MonthlyMode.DayOfMonth && draft.date.dayOfMonth > 28) {
-            Spacer(Modifier.height(Space.sm))
-            Text(
-                text = "meses sem o dia ${draft.date.dayOfMonth} são pulados",
-                style = EntryMeta,
-                color = colors.slate,
-            )
-        }
-    }
-
-    Spacer(Modifier.height(Space.lg))
-    Section("termina")
-    ScrollingPills {
-        Pill("nunca", rule.ending == RepeatEnding.Never, { onChange { it.withEnding(RepeatEnding.Never) } })
-        Pill("após", rule.ending == RepeatEnding.Count, { onChange { it.withEnding(RepeatEnding.Count) } })
-        Pill("em", rule.ending == RepeatEnding.Until, { onChange { it.withEnding(RepeatEnding.Until) } })
-    }
-
-    when (rule.ending) {
-        RepeatEnding.Count -> {
-            Spacer(Modifier.height(Space.md))
-            Stepper(
-                value = rule.count,
-                onChange = { value -> onChange { it.withRecurrence { c -> c.copy(count = value) } } },
-                unit = if (rule.count == 1) "vez" else "vezes",
-                min = 1,
-                max = Recurrence.MAX_COUNT,
-            )
-        }
-
-        RepeatEnding.Until -> {
-            Spacer(Modifier.height(Space.md))
-            DateStepper(
-                date = rule.until ?: Recurrence.defaultUntil(draft.date),
-                onPick = { date -> onChange { it.withRecurrence { c -> c.copy(until = date) } } },
-                months = true,
-            )
-        }
-
-        RepeatEnding.Never -> Unit
-    }
-
-    Spacer(Modifier.height(Space.md))
-    Text(rule.summary(draft.date), style = EntryMeta, color = colors.brand)
+    return if (draft.recurrence.repeats) "$span de cada ocorrência" else span
 }
-
-private fun EventDraft.withEnding(ending: RepeatEnding): EventDraft =
-    withRecurrence { it.copy(ending = ending) }
-
-@Composable
-private fun Section(label: String) {
-    val colors = LocalChronicle.current
-
-    Column {
-        Text(label.uppercase(), style = Eyebrow, color = colors.slate)
-        Spacer(Modifier.height(Space.sm))
-    }
-}
-
-

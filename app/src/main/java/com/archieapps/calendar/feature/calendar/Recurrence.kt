@@ -127,17 +127,7 @@ data class Recurrence(
 
         val parts = mutableListOf(if (interval <= 1) unit.every else "a cada $interval ${unit.many}")
 
-        when (unit) {
-            RepeatUnit.Week -> if (weekdays.isNotEmpty()) parts += weekdayList()
-
-            RepeatUnit.Month -> if (monthlyMode == MonthlyMode.WeekdayOfMonth) {
-                monthlyPattern(start)?.let { parts += it }
-            } else {
-                start?.let { parts += "no dia ${it.dayOfMonth}" }
-            }
-
-            else -> Unit
-        }
+        parts += shape(unit, start)
 
         when (ending) {
             RepeatEnding.Count -> parts += if (count == 1) "1 vez" else "$count vezes"
@@ -146,6 +136,30 @@ data class Recurrence(
         }
 
         return parts.joinToString(", ")
+    }
+
+    fun compact(start: LocalDate? = null): String {
+        val unit = unit ?: return "não repete"
+
+        if (unit == RepeatUnit.Week && interval == 1 && weekdays.isNotEmpty()) {
+            return weekdayList()
+        }
+
+        val head = if (interval <= 1) unit.every else "a cada $interval ${unit.many}"
+
+        return (listOf(head) + shape(unit, start)).joinToString(", ")
+    }
+
+    private fun shape(unit: RepeatUnit, start: LocalDate?): List<String> = when (unit) {
+        RepeatUnit.Week -> if (weekdays.isEmpty()) emptyList() else listOf(weekdayList())
+
+        RepeatUnit.Month -> if (monthlyMode == MonthlyMode.WeekdayOfMonth) {
+            listOfNotNull(monthlyPattern(start))
+        } else {
+            listOfNotNull(start?.let { "no dia ${it.dayOfMonth}" })
+        }
+
+        else -> emptyList()
     }
 
     fun monthlyPattern(start: LocalDate?): String? {
@@ -257,5 +271,106 @@ data class Recurrence(
 
             return runCatching { LocalDate.parse(date, compactDate) }.getOrNull()
         }
+    }
+}
+
+enum class RecurrencePreset(val label: String) {
+    Today("apenas hoje"),
+    Once("data única"),
+    Daily("todo dia"),
+    Weekdays("dias da semana"),
+    Weekly("semanal"),
+    Monthly("mensal"),
+    Yearly("anual"),
+    Custom("personalizado");
+
+    val repeats: Boolean get() = this != Today && this != Once
+}
+
+val businessDays: Set<DayOfWeek> = setOf(
+    DayOfWeek.MONDAY,
+    DayOfWeek.TUESDAY,
+    DayOfWeek.WEDNESDAY,
+    DayOfWeek.THURSDAY,
+    DayOfWeek.FRIDAY,
+)
+
+fun RecurrencePreset.ruleFor(start: LocalDate, current: Recurrence = Recurrence()): Recurrence {
+    val kept = current.copy(
+        ending = current.ending,
+        count = current.count,
+        until = current.until,
+    )
+
+    return when (this) {
+        RecurrencePreset.Today, RecurrencePreset.Once -> Recurrence()
+
+        RecurrencePreset.Daily -> kept.copy(
+            unit = RepeatUnit.Day,
+            interval = 1,
+            weekdays = emptySet(),
+            monthlyMode = MonthlyMode.DayOfMonth,
+        )
+
+        RecurrencePreset.Weekdays -> kept.copy(
+            unit = RepeatUnit.Week,
+            interval = 1,
+            weekdays = businessDays,
+            monthlyMode = MonthlyMode.DayOfMonth,
+        )
+
+        RecurrencePreset.Weekly -> kept.copy(
+            unit = RepeatUnit.Week,
+            interval = 1,
+            weekdays = setOf(start.dayOfWeek),
+            monthlyMode = MonthlyMode.DayOfMonth,
+        )
+
+        RecurrencePreset.Monthly -> kept.copy(
+            unit = RepeatUnit.Month,
+            interval = 1,
+            weekdays = emptySet(),
+            monthlyMode = MonthlyMode.DayOfMonth,
+        )
+
+        RecurrencePreset.Yearly -> kept.copy(
+            unit = RepeatUnit.Year,
+            interval = 1,
+            weekdays = emptySet(),
+            monthlyMode = MonthlyMode.DayOfMonth,
+        )
+
+        RecurrencePreset.Custom -> if (current.repeats) current else kept.copy(unit = RepeatUnit.Day)
+    }.normalized(start)
+}
+
+fun presetOf(
+    rule: Recurrence,
+    start: LocalDate,
+    today: LocalDate = LocalDate.now(),
+): RecurrencePreset {
+    val unit = rule.unit
+        ?: return if (start == today) RecurrencePreset.Today else RecurrencePreset.Once
+
+    if (rule.interval != 1) {
+        return RecurrencePreset.Custom
+    }
+
+    return when (unit) {
+        RepeatUnit.Day -> RecurrencePreset.Daily
+
+        RepeatUnit.Week -> when {
+            rule.weekdays == businessDays -> RecurrencePreset.Weekdays
+            rule.weekdays.isEmpty() || rule.weekdays == setOf(start.dayOfWeek) -> RecurrencePreset.Weekly
+            else -> RecurrencePreset.Custom
+        }
+
+        RepeatUnit.Month -> if (rule.monthlyMode == MonthlyMode.DayOfMonth) {
+            RecurrencePreset.Monthly
+        } else {
+            RecurrencePreset.Custom
+        }
+
+        RepeatUnit.Year -> RecurrencePreset.Yearly
     }
 }

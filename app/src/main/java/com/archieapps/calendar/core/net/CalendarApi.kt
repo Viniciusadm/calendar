@@ -35,12 +35,59 @@ class CalendarApi(private val settings: Settings) {
 
     private val jsonMedia = "application/json; charset=utf-8".toMediaType()
 
-    suspend fun occurrences(start: String, end: String, kinds: String? = null): ApiResult<List<OccurrenceDto>> =
+    suspend fun occurrences(
+        start: String,
+        end: String,
+        kinds: String? = null,
+        natures: String? = null,
+        completion: String? = null,
+        recurringTasks: String? = null,
+    ): ApiResult<List<OccurrenceDto>> =
         send("GET", "/api/calendar/events", buildMap {
             put("start", start)
             put("end", end)
             if (kinds != null) put("kinds", kinds)
+            if (natures != null) put("natures", natures)
+            if (completion != null) put("pending", completion)
+            if (recurringTasks != null) put("recurringTasks", recurringTasks)
         }) { json.decodeFromString<Envelope<List<OccurrenceDto>>>(it).let { e -> e.success to (e.body to e.misc) } }
+
+    suspend fun tasks(
+        filter: String,
+        page: Int = 1,
+        query: String? = null,
+        categories: String? = null,
+        priorities: String? = null,
+        perPage: Int = 30,
+    ): ApiResult<List<OccurrenceDto>> =
+        send("GET", "/api/calendar/tasks", buildMap {
+            put("filter", filter)
+            put("page", page.toString())
+            put("perPage", perPage.toString())
+            if (!query.isNullOrBlank()) put("q", query)
+            if (categories != null) put("categories", categories)
+            if (priorities != null) put("priorities", priorities)
+        }) { raw ->
+            val envelope = json.decodeFromString<Envelope<List<OccurrenceDto>>>(raw)
+
+            envelope.success to (envelope.body to envelope.misc?.withPage(envelope.pagination))
+        }
+
+    suspend fun taskSummary(
+        query: String? = null,
+        categories: String? = null,
+        priorities: String? = null,
+    ): ApiResult<TaskSummaryDto> =
+        send("GET", "/api/calendar/tasks/summary", buildMap {
+            if (!query.isNullOrBlank()) put("q", query)
+            if (categories != null) put("categories", categories)
+            if (priorities != null) put("priorities", priorities)
+        }) { json.decodeFromString<Envelope<TaskSummaryDto>>(it).let { e -> e.success to (e.body to e.misc) } }
+
+    suspend fun taskStats(eventId: Int): ApiResult<TaskSeriesStatsDto> =
+        send("GET", "/api/calendar/tasks/${'$'}eventId/stats", emptyMap()) {
+            json.decodeFromString<Envelope<TaskSeriesStatsDto>>(it).let { e -> e.success to (e.body to e.misc) }
+        }
 
     suspend fun agenda(
         from: String,
@@ -125,6 +172,9 @@ class CalendarApi(private val settings: Settings) {
 
     suspend fun setCompletion(occurrenceId: String, completed: Boolean): ApiResult<Unit> =
         mutate("PATCH", "/api/calendar/occurrences/$occurrenceId/completion", jsonOf("completed" to completed))
+
+    suspend fun resetOccurrence(occurrenceId: String): ApiResult<Unit> =
+        mutate("PUT", "/api/calendar/occurrences/${'$'}occurrenceId", jsonOf("reset" to true))
 
     suspend fun cancelOccurrence(occurrenceId: String): ApiResult<Unit> =
         mutate("DELETE", "/api/calendar/occurrences/$occurrenceId", null)

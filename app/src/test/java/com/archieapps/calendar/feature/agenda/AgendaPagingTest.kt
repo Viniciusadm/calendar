@@ -39,6 +39,11 @@ class AgendaPagingTest {
             remindersMuted = false,
             recurring = false,
             recurrenceRule = null,
+            recurrenceEndsAt = null,
+            dueDate = null,
+            overdue = false,
+            bucket = null,
+            streak = null,
             editable = true,
         )
 

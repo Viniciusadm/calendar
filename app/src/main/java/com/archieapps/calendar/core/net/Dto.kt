@@ -10,8 +10,20 @@ data class Envelope<T>(
     val message: String? = null,
     val body: T? = null,
     val misc: FeedMisc? = null,
+    val pagination: PageInfo? = null,
     val error: String? = null,
 )
+
+@Serializable
+data class PageInfo(
+    val limit: Int = 0,
+    val current: Int = 1,
+    val last: Int = 1,
+    val count: Int = 0,
+    val total: Int = 0,
+) {
+    val hasNext: Boolean get() = current < last
+}
 
 @Serializable
 data class FeedMisc(
@@ -21,7 +33,13 @@ data class FeedMisc(
     val hasMore: Boolean = false,
     val nextCursor: String? = null,
     val scannedThrough: String? = null,
-)
+    val filter: String? = null,
+    val today: String? = null,
+    val matched: Int = 0,
+    val page: PageInfo? = null,
+) {
+    fun withPage(info: PageInfo?): FeedMisc = copy(page = info)
+}
 
 @Serializable
 data class FeedWindow(val start: String? = null, val end: String? = null)
@@ -57,6 +75,13 @@ data class OccurrenceDto(
     val completed: Boolean = false,
     val completedAt: String? = null,
     val editable: Boolean = false,
+    val dueDate: String? = null,
+    val overdue: Boolean = false,
+    val bucket: String? = null,
+    val recurrence: String? = null,
+    val recurrenceEndsAt: String? = null,
+    val dueOffsetDays: Int? = null,
+    val streak: Int? = null,
     val requiresCode: Boolean = false,
     val remindersMuted: Boolean = false,
     val meta: JsonObject? = null,
@@ -99,6 +124,7 @@ data class EventDto(
     val time: String? = null,
     val allDay: Boolean = true,
     val durationMinutes: Int = 1440,
+    val dueOffsetDays: Int? = null,
     val categoryId: Int? = null,
     val priority: String = "none",
     val color: String? = null,
@@ -190,4 +216,44 @@ data class CategoryDto(
     val position: Int = 0,
     val eventCount: Int? = null,
     val goalCount: Int? = null,
+)
+
+@Serializable
+data class TaskSummaryDto(
+    val today: String,
+    val counts: Map<String, Int> = emptyMap(),
+    val day: DayProgressDto = DayProgressDto(),
+    val rate: TaskRateDto = TaskRateDto(),
+    val streak: TaskStreakDto = TaskStreakDto(),
+)
+
+@Serializable
+data class DayProgressDto(
+    val scheduled: Int = 0,
+    val completed: Int = 0,
+    val pending: Int = 0,
+)
+
+@Serializable
+data class TaskRateDto(
+    val days: Int = 0,
+    val scheduled: Int = 0,
+    val completed: Int = 0,
+    val percent: Int? = null,
+)
+
+@Serializable
+data class TaskStreakDto(
+    val days: Int = 0,
+    val since: String? = null,
+)
+
+@Serializable
+data class TaskSeriesStatsDto(
+    val eventId: Int,
+    val windowStart: String,
+    val scheduled: Int = 0,
+    val completed: Int = 0,
+    val streak: Int = 0,
+    val lastCompletedOn: String? = null,
 )

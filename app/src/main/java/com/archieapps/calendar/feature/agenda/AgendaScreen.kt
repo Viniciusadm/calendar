@@ -36,6 +36,7 @@ import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
 import com.archieapps.calendar.design.components.CircleButton
+import com.archieapps.calendar.design.components.Hairline
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
 import com.archieapps.calendar.design.components.PillRow
@@ -262,25 +263,6 @@ private fun AgendaEmpty(filtered: Boolean, onClearFilters: () -> Unit) {
             TextAction("limpar filtros", onClearFilters, colors.brand, style = Eyebrow)
         }
     }
-}
-
-@Composable
-private fun Hairline() {
-    val colors = LocalChronicle.current
-
-    Spacer(
-        Modifier
-            .fillMaxWidth()
-            .height(Stroke.hairline)
-            .drawBehind {
-                drawLine(
-                    color = colors.hairline,
-                    start = Offset(0f, 0f),
-                    end = Offset(size.width, 0f),
-                    strokeWidth = size.height,
-                )
-            }
-    )
 }
 
 private fun fromLabel(from: LocalDate): String {

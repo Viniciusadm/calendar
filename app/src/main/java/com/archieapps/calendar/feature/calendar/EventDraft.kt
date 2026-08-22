@@ -2,6 +2,7 @@ package com.archieapps.calendar.feature.calendar
 
 import com.archieapps.calendar.core.net.EventDto
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
@@ -19,6 +20,7 @@ val reminderChoices: List<Pair<String, Int?>> = listOf(
 data class EventDraft(
     val eventId: Int? = null,
     val title: String = "",
+    val description: String = "",
     val date: LocalDate = LocalDate.now(),
     val allDay: Boolean = true,
     val time: String = "09:00",
@@ -26,6 +28,7 @@ data class EventDraft(
     val categoryId: Int? = null,
     val priority: String = "none",
     val isTask: Boolean = false,
+    val dueOffsetDays: Int = 0,
     val recurrence: Recurrence = Recurrence(),
     val reminderMinutes: Int? = null,
     val days: Int = 1,
@@ -33,6 +36,13 @@ data class EventDraft(
     val isEditing: Boolean get() = eventId != null
 
     val canSave: Boolean get() = title.isNotBlank()
+
+    val dueDate: LocalDate get() = date.plusDays(dueOffsetDays.toLong())
+
+    val hasDeadline: Boolean get() = dueOffsetDays > 0
+
+    fun onDueDate(due: LocalDate): EventDraft =
+        copy(dueOffsetDays = ChronoUnit.DAYS.between(date, due).coerceAtLeast(0L).toInt())
 
     fun onDate(date: LocalDate): EventDraft = copy(date = date, recurrence = recurrence.normalized(date))
 
@@ -52,7 +62,9 @@ data class EventDraft(
 
     fun toPayload(): JsonObject = buildJsonObject {
         put("title", title.trim())
+        put("description", description.trim().ifBlank { null })
         put("nature", if (isTask) "task" else "event")
+        put("dueOffsetDays", if (isTask && dueOffsetDays > 0) dueOffsetDays else null)
         put("date", date.toString())
         put("allDay", allDay)
         if (allDay) {
@@ -78,6 +90,7 @@ data class EventDraft(
         fun from(dto: EventDto): EventDraft = EventDraft(
             eventId = dto.id,
             title = dto.title,
+            description = dto.description ?: "",
             date = LocalDate.parse(dto.date),
             allDay = dto.allDay,
             time = dto.time ?: "09:00",
@@ -85,6 +98,7 @@ data class EventDraft(
             categoryId = dto.categoryId,
             priority = dto.priority,
             isTask = dto.nature == "task",
+            dueOffsetDays = dto.dueOffsetDays ?: 0,
             recurrence = Recurrence.parse(dto.recurrence),
             reminderMinutes = dto.reminders.firstOrNull { it.active }?.minutesBefore,
             days = if (dto.allDay) (dto.durationMinutes / 1440).coerceAtLeast(1) else 1,
