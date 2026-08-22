@@ -160,6 +160,31 @@ class TaskModelTest {
     }
 
     @Test
+    fun `so conclui ocorrencia que ja venceu`() {
+        val hoje = task(date = today, bucket = "today")
+        val atrasada = task(date = today.minusDays(3), bucket = "overdue")
+        val amanha = task(date = today.plusDays(1), bucket = "upcoming")
+
+        assertTrue(hoje.togglable(today))
+        assertTrue(atrasada.togglable(today))
+        assertTrue(!amanha.togglable(today))
+    }
+
+    @Test
+    fun `reabrir vale mesmo para ocorrencia futura`() {
+        val futuraConcluida = task(date = today.plusDays(2), bucket = "upcoming", completed = true)
+
+        assertTrue(futuraConcluida.togglable(today))
+    }
+
+    @Test
+    fun `projecao nunca alterna`() {
+        val projecao = task(date = today, bucket = "today").copy(isTask = true, editable = false)
+
+        assertTrue(!projecao.togglable(today))
+    }
+
+    @Test
     fun `state derives paging and filter counters`() {
         val state = TaskListState(
             rows = listOf(task(id = "a")),

@@ -136,7 +136,7 @@ class TasksViewModel(
     }
 
     fun toggleCompletion(entry: CalendarEntry) {
-        if (!entry.isTask || !entry.editable || _state.value.saving) {
+        if (!entry.togglable() || _state.value.saving) {
             return
         }
 

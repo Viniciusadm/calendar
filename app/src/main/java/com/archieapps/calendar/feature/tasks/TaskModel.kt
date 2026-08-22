@@ -88,6 +88,14 @@ data class TaskListState(
     fun countOf(filter: TaskFilter): Int? = summary?.counts?.get(filter.value)
 }
 
+fun CalendarEntry.togglable(today: LocalDate = LocalDate.now()): Boolean {
+    if (!isTask || !editable) {
+        return false
+    }
+
+    return completed || date <= today
+}
+
 fun List<CalendarEntry>.patchRowCompletion(occurrenceId: String, completed: Boolean): List<CalendarEntry> =
     map { row -> if (row.id == occurrenceId) row.copy(completed = completed) else row }
 

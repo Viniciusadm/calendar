@@ -290,6 +290,10 @@ class CalendarApi(private val settings: Settings) {
 
         Log.w(TAG, "resposta inesperada ($code): ${raw.take(240)}")
 
+        if (code == TOO_MANY) {
+            return "Muitas ações seguidas. Espere um instante."
+        }
+
         return ack?.error ?: ack?.message ?: "Falha na requisição ($code)."
     }
 
@@ -297,5 +301,7 @@ class CalendarApi(private val settings: Settings) {
         const val TAG = "ChronicleApi"
 
         const val GATE_MESSAGE = "digo inv"
+
+        const val TOO_MANY = 429
     }
 }

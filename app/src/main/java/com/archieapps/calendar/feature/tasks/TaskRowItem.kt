@@ -51,6 +51,7 @@ fun TaskRowItem(
 ) {
     val colors = LocalChronicle.current
     val overdue = TaskBucket.of(entry.bucket) == TaskBucket.Overdue
+    val togglable = entry.togglable(today)
 
     Row(
         modifier = modifier
@@ -59,10 +60,10 @@ fun TaskRowItem(
         verticalAlignment = Alignment.Top,
     ) {
         CheckNode(
-            color = entry.color,
+            color = if (togglable) entry.color else colors.hairline,
             completed = entry.completed,
             label = if (entry.completed) "Reabrir ${entry.title}" else "Concluir ${entry.title}",
-            onClick = onToggle,
+            onClick = onToggle.takeIf { togglable },
         )
 
         Column(
@@ -115,7 +116,7 @@ private fun CheckNode(
     color: Color,
     completed: Boolean,
     label: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
 ) {
     val colors = LocalChronicle.current
 
@@ -123,8 +124,8 @@ private fun CheckNode(
         modifier = Modifier
             .size(nodeBox)
             .clip(CircleShape)
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = label },
+            .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick))
+            .then(if (onClick == null) Modifier else Modifier.semantics { contentDescription = label }),
         contentAlignment = Alignment.Center,
     ) {
         Spacer(
