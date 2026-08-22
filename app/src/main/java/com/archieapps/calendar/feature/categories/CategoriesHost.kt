@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.archieapps.calendar.core.net.CalendarApi
 import com.archieapps.calendar.design.LocalChronicle
+import com.archieapps.calendar.design.components.showBriefly
 import com.archieapps.calendar.feature.auth.AccessCodeSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,7 +42,7 @@ fun CategoriesHost(
 
     LaunchedEffect(state.notice) {
         state.notice?.let {
-            snackbar.showSnackbar(it)
+            snackbar.showBriefly(it)
             viewModel.dismissNotice()
         }
     }

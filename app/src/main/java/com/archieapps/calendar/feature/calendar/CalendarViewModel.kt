@@ -193,6 +193,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
                 start = start.toString(),
                 end = end.toString(),
                 recurringTasks = recurringTaskMode(),
+                noPriorityTasks = IDLE_TODAY,
             )
         ) {
             is ApiResult.Ok -> {
@@ -253,6 +254,7 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
                 end = date.toString(),
                 natures = "task",
                 recurringTasks = "window",
+                noPriorityTasks = IDLE_TODAY,
             )
 
             if (result !is ApiResult.Ok) {
@@ -442,6 +444,8 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
         }
     }
 }
+
+private const val IDLE_TODAY = "today"
 
 private const val DAY_SETTLE_MS = 220L
 

@@ -42,6 +42,7 @@ class CalendarApi(private val settings: Settings) {
         natures: String? = null,
         completion: String? = null,
         recurringTasks: String? = null,
+        noPriorityTasks: String? = null,
     ): ApiResult<List<OccurrenceDto>> =
         send("GET", "/api/calendar/events", buildMap {
             put("start", start)
@@ -50,6 +51,7 @@ class CalendarApi(private val settings: Settings) {
             if (natures != null) put("natures", natures)
             if (completion != null) put("pending", completion)
             if (recurringTasks != null) put("recurringTasks", recurringTasks)
+            if (noPriorityTasks != null) put("noPriorityTasks", noPriorityTasks)
         }) { json.decodeFromString<Envelope<List<OccurrenceDto>>>(it).let { e -> e.success to (e.body to e.misc) } }
 
     suspend fun tasks(

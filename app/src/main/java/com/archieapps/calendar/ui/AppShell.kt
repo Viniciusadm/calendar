@@ -39,7 +39,9 @@ import com.archieapps.calendar.core.store.Settings
 import com.archieapps.calendar.core.sync.ReminderSync
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.components.ActionButton
+import com.archieapps.calendar.design.components.ChronicleToastHost
 import com.archieapps.calendar.design.components.TabBar
+import com.archieapps.calendar.design.components.showBriefly
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
 import com.archieapps.calendar.feature.agenda.AgendaHost
@@ -197,7 +199,7 @@ private fun Shell(
 
     LaunchedEffect(state.notice) {
         state.notice?.let {
-            snackbar.showSnackbar(it)
+            snackbar.showBriefly(it)
             viewModel.dismissNotice()
         }
     }
@@ -220,7 +222,7 @@ private fun Shell(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = colors.ground,
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { ChronicleToastHost(snackbar) },
         bottomBar = {
             if (leaf == Leaf.Root) {
                 TabBar(

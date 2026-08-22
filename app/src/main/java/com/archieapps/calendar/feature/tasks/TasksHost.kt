@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.archieapps.calendar.core.net.CategoryDto
 import com.archieapps.calendar.design.LocalChronicle
+import com.archieapps.calendar.design.components.showBriefly
 import com.archieapps.calendar.feature.calendar.CalendarEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,10 +57,9 @@ fun TasksHost(
         val message = state.notice ?: return@LaunchedEffect
         val undoable = state.undo != null
 
-        val result = snackbar.showSnackbar(
+        val result = snackbar.showBriefly(
             message = message,
             actionLabel = if (undoable) "desfazer" else null,
-            withDismissAction = false,
         )
 
         if (result == SnackbarResult.ActionPerformed) {

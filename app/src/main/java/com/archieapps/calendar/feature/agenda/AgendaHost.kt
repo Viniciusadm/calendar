@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.archieapps.calendar.core.net.CategoryDto
 import com.archieapps.calendar.design.LocalChronicle
+import com.archieapps.calendar.design.components.showBriefly
 import com.archieapps.calendar.feature.calendar.CalendarEntry
 import com.archieapps.calendar.feature.calendar.MonthPickerSheet
 import java.time.LocalDate
@@ -47,7 +48,7 @@ fun AgendaHost(
 
     LaunchedEffect(state.notice) {
         state.notice?.let {
-            snackbar.showSnackbar(it)
+            snackbar.showBriefly(it)
             viewModel.dismissNotice()
         }
     }
