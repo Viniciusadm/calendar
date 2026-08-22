@@ -7,14 +7,22 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.archieapps.calendar.core.alarm.AlarmScheduler
 import com.archieapps.calendar.core.alarm.Notifications
 import com.archieapps.calendar.core.net.ApiResult
 import com.archieapps.calendar.core.net.CalendarApi
+import com.archieapps.calendar.core.net.OccurrenceDto
 import com.archieapps.calendar.core.store.Settings
 import com.archieapps.calendar.core.store.TaskSnapshot
 import com.archieapps.calendar.core.store.TaskSnapshotRow
 import com.archieapps.calendar.core.store.TaskSnapshotStore
+import com.archieapps.calendar.feature.calendar.toEntry
+import com.archieapps.calendar.feature.calendar.togglable
+import com.archieapps.calendar.feature.tasks.anchorCaption
+import com.archieapps.calendar.feature.widget.TodayTasksWidget
+import com.archieapps.calendar.feature.widget.WidgetConfig
+import com.archieapps.calendar.feature.widget.WidgetConfigStore
 import java.time.LocalDate
 
 sealed interface SyncOutcome {
@@ -30,7 +38,7 @@ object ReminderSync {
 
     private const val NOW_WORK = "reminder-sync-now"
 
-    private const val SNAPSHOT_ROWS = 12
+    private const val MAX_SNAPSHOT_ROWS = 30
 
     fun enqueue(context: Context, force: Boolean) {
         val request = OneTimeWorkRequestBuilder<ReminderSyncWorker>()
@@ -72,41 +80,89 @@ object ReminderSync {
         return SyncOutcome.Applied(plan.size)
     }
 
-    suspend fun refreshTaskSnapshot(context: Context): TaskSnapshot? {
+    suspend fun refreshWidgets(context: Context): Int {
         val settings = Settings(context)
 
-        if (!settings.isLoggedIn) return null
+        if (!settings.isLoggedIn) return 0
+
+        val manager = GlanceAppWidgetManager(context)
+        val ids = runCatching { manager.getGlanceIds(TodayTasksWidget::class.java) }.getOrDefault(emptyList())
+
+        if (ids.isEmpty()) return 0
 
         val api = CalendarApi(settings)
-        val today = LocalDate.now().toString()
-
-        val rows = when (val result = api.tasks(filter = "today", perPage = SNAPSHOT_ROWS)) {
-            is ApiResult.Ok -> result.value
-            is ApiResult.Failure -> return null
-        }
-
+        val configs = WidgetConfigStore(context)
+        val snapshots = TaskSnapshotStore(context)
+        val today = LocalDate.now()
         val overdue = when (val summary = api.taskSummary()) {
             is ApiResult.Ok -> summary.value.counts["overdue"] ?: 0
             is ApiResult.Failure -> 0
         }
 
-        val snapshot = TaskSnapshot(
-            date = today,
-            rows = rows.map { row ->
-                TaskSnapshotRow(
-                    occurrenceId = row.id,
-                    title = row.title,
-                    completed = row.completed,
-                    clock = row.time,
-                    overdue = row.overdue,
-                    recurring = row.recurring,
+        var refreshed = 0
+        val alive = mutableSetOf<Int>()
+
+        ids.forEach { glanceId ->
+            val widgetId = runCatching { manager.getAppWidgetId(glanceId) }.getOrNull() ?: return@forEach
+            val config = configs.load(widgetId)
+
+            alive += widgetId
+
+            val rows = when (
+                val result = api.tasks(
+                    filter = config.filter,
+                    categories = config.categoriesParam,
+                    priorities = config.prioritiesParam,
+                    perPage = fetchSize(config),
                 )
-            },
-            overdue = overdue,
+            ) {
+                is ApiResult.Ok -> result.value
+                is ApiResult.Failure -> return@forEach
+            }
+
+            val visible = rows
+                .filter { config.showCompleted || !it.completed }
+                .map { it.toSnapshotRow(today) }
+
+            snapshots.save(
+                widgetId,
+                TaskSnapshot(
+                    date = today.toString(),
+                    rows = visible.take(config.maxRows),
+                    overdue = overdue,
+                    total = visible.size,
+                ),
+            )
+
+            runCatching { TodayTasksWidget().update(context, glanceId) }
+            refreshed++
+        }
+
+        snapshots.prune(alive)
+
+        return refreshed
+    }
+
+    private fun fetchSize(config: WidgetConfig): Int =
+        (config.maxRows * 2).coerceIn(config.maxRows, MAX_SNAPSHOT_ROWS)
+
+    private fun OccurrenceDto.toSnapshotRow(today: LocalDate): TaskSnapshotRow {
+        val entry = toEntry()
+
+        return TaskSnapshotRow(
+            occurrenceId = entry.id,
+            title = entry.title,
+            completed = entry.completed,
+            clock = entry.clock,
+            overdue = entry.overdue,
+            recurring = entry.recurring,
+            color = colorToken ?: color,
+            priority = entry.priority,
+            caption = anchorCaption(entry, today),
+            togglable = entry.togglable(today),
+            actionType = entry.action?.type,
+            actionTarget = entry.action?.target,
+            actionLabel = entry.action?.label,
         )
-
-        TaskSnapshotStore(context).save(snapshot)
-
-        return snapshot
     }
 }

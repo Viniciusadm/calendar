@@ -13,11 +13,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import com.archieapps.calendar.core.net.CategoryDto
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.components.showBriefly
 import com.archieapps.calendar.feature.calendar.CalendarEntry
 import com.archieapps.calendar.feature.calendar.TaskAction
+import com.archieapps.calendar.feature.widget.WidgetBridge
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,6 +35,7 @@ fun TasksHost(
     onWrote: () -> Unit,
 ) {
     val colors = LocalChronicle.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val state by viewModel.state.collectAsState()
     var seenTick by remember { mutableStateOf(writeTick) }
@@ -88,6 +91,7 @@ fun TasksHost(
         onOpen = onOpen,
         onToggle = { entry ->
             viewModel.toggleCompletion(entry)
+            WidgetBridge.onCompletionChanged(context, entry.id, !entry.completed)
             onWrote()
         },
         onActionFailed = { action ->

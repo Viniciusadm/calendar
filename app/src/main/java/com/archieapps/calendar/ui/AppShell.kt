@@ -59,6 +59,8 @@ import com.archieapps.calendar.feature.settings.Preferences
 import com.archieapps.calendar.feature.settings.SettingsScreen
 import com.archieapps.calendar.feature.tasks.TaskFilter
 import com.archieapps.calendar.feature.tasks.TasksHost
+import com.archieapps.calendar.core.store.WidgetRevision
+import com.archieapps.calendar.feature.widget.WidgetBridge
 import com.archieapps.calendar.feature.tasks.TasksViewModel
 
 @Composable
@@ -66,6 +68,8 @@ fun Root(
     settings: Settings,
     preferences: Preferences,
     onPreferences: ((Preferences) -> Preferences) -> Unit,
+    focusOccurrence: String? = null,
+    onFocusHandled: () -> Unit = {},
 ) {
     val colors = LocalChronicle.current
     var loggedIn by remember { mutableStateOf(settings.isLoggedIn) }
@@ -76,6 +80,8 @@ fun Root(
                 settings = settings,
                 preferences = preferences,
                 onPreferences = onPreferences,
+                focusOccurrence = focusOccurrence,
+                onFocusHandled = onFocusHandled,
                 onSignedOut = {
                     settings.clearSession()
                     loggedIn = false
@@ -129,6 +135,8 @@ private fun Shell(
     settings: Settings,
     preferences: Preferences,
     onPreferences: ((Preferences) -> Preferences) -> Unit,
+    focusOccurrence: String?,
+    onFocusHandled: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
     val colors = LocalChronicle.current
@@ -193,8 +201,33 @@ private fun Shell(
         if (state.unauthorized || tasksState.unauthorized) onSignedOut()
     }
 
+    val widgetWrites by WidgetRevision.fromWidget.collectAsState()
+
+    LaunchedEffect(widgetWrites) {
+        if (widgetWrites > 0) {
+            tasksViewModel.markStale()
+            tasksViewModel.reloadIfStale()
+        }
+    }
+
+    LaunchedEffect(focusOccurrence, tasksState.rows) {
+        val target = focusOccurrence ?: return@LaunchedEffect
+
+        tab = Tab.Tasks
+        leaf = Leaf.Root
+
+        val row = tasksState.rows.firstOrNull { it.id == target } ?: return@LaunchedEffect
+
+        viewModel.focus(row)
+        onFocusHandled()
+    }
+
     LaunchedEffect(state.writeTick) {
         ReminderSync.enqueue(context, force = state.writeTick > 0)
+
+        if (state.writeTick > 0) {
+            WidgetBridge.onWrote(context)
+        }
     }
 
     LaunchedEffect(state.notice) {
@@ -295,6 +328,7 @@ private fun Shell(
                     onOpenEntry = viewModel::focus,
                     onToggleEntry = { entry ->
                         viewModel.toggleCompletion(entry)
+                        WidgetBridge.onCompletionChanged(context, entry.id, !entry.completed)
                         tasksViewModel.markStale()
                     },
                     onAccount = { tab = Tab.Settings },
@@ -366,6 +400,7 @@ private fun Shell(
                 onEdit = viewModel::editFocused,
                 onToggleCompletion = {
                     viewModel.toggleCompletion(entry)
+                    WidgetBridge.onCompletionChanged(context, entry.id, !entry.completed)
                     tasksViewModel.markStale()
                     viewModel.focus(null)
                 },

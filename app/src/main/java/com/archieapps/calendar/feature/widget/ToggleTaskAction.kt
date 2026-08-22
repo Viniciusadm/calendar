@@ -9,7 +9,7 @@ import com.archieapps.calendar.core.net.ApiResult
 import com.archieapps.calendar.core.net.CalendarApi
 import com.archieapps.calendar.core.store.Settings
 import com.archieapps.calendar.core.store.TaskSnapshotStore
-import com.archieapps.calendar.core.sync.ReminderSync
+import com.archieapps.calendar.core.store.WidgetRevision
 
 class ToggleTaskAction : ActionCallback {
     override suspend fun onAction(
@@ -21,25 +21,26 @@ class ToggleTaskAction : ActionCallback {
         val wasCompleted = parameters[completed] ?: false
         val target = !wasCompleted
         val store = TaskSnapshotStore(context)
+        val widget = TodayTasksWidget()
 
         store.patchCompletion(id, target)
-        TodayTasksWidget().updateAll(context)
+        widget.update(context, glanceId)
 
         val settings = Settings(context)
 
         if (!settings.isLoggedIn) {
             store.patchCompletion(id, wasCompleted)
-            TodayTasksWidget().updateAll(context)
+            widget.update(context, glanceId)
 
             return
         }
 
-        when (CalendarApi(settings).setCompletion(id, target)) {
-            is ApiResult.Ok -> ReminderSync.refreshTaskSnapshot(context)
-            is ApiResult.Failure -> store.patchCompletion(id, wasCompleted)
+        if (CalendarApi(settings).setCompletion(id, target) is ApiResult.Failure) {
+            store.patchCompletion(id, wasCompleted)
         }
 
-        TodayTasksWidget().updateAll(context)
+        WidgetRevision.bumpFromWidget()
+        widget.updateAll(context)
     }
 
     companion object {

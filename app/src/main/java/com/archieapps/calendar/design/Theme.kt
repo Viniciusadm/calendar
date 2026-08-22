@@ -54,6 +54,8 @@ private val darkChronicle = ChronicleColors(
     isDark = true,
 )
 
+fun chronicleColors(dark: Boolean): ChronicleColors = if (dark) darkChronicle else lightChronicle
+
 private val lightScheme = lightColorScheme(
     primary = Azure,
     onPrimary = Color.White,
