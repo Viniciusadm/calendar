@@ -273,7 +273,10 @@ class CalendarApi(private val settings: Settings) {
                 if (success && value != null) {
                     ApiResult.Ok(value, misc)
                 } else {
-                    ApiResult.Failure(errorFrom(raw, response.code), gated = isGated(response.code, raw))
+                    ApiResult.Failure(
+                        errorFrom(raw, response.code, "$method $path"),
+                        gated = isGated(response.code, raw),
+                    )
                 }
             }
         } catch (error: IOException) {
@@ -287,10 +290,10 @@ class CalendarApi(private val settings: Settings) {
     private fun isGated(status: Int, raw: String): Boolean =
         status == 400 && raw.contains(GATE_MESSAGE)
 
-    private fun errorFrom(raw: String, code: Int): String {
+    private fun errorFrom(raw: String, code: Int, route: String): String {
         val ack = runCatching { json.decodeFromString<Ack>(raw) }.getOrNull()
 
-        Log.w(TAG, "resposta inesperada ($code): ${raw.take(240)}")
+        Log.w(TAG, "resposta inesperada em $route ($code): ${raw.take(240)}")
 
         if (code == TOO_MANY) {
             return "Muitas ações seguidas. Espere um instante."
