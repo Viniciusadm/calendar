@@ -376,7 +376,14 @@ class CalendarViewModel(private val api: CalendarApi) : ViewModel() {
             val payload = draft.toPayload()
             val result = draft.eventId?.let { api.updateEvent(it, payload) } ?: api.createEvent(payload)
 
-            finish(result, if (draft.isEditing) "Evento atualizado." else "Evento criado.") {
+            val message = when {
+                draft.isTask && draft.isEditing -> "Tarefa atualizada."
+                draft.isTask -> "Tarefa criada."
+                draft.isEditing -> "Evento atualizado."
+                else -> "Evento criado."
+            }
+
+            finish(result, message) {
                 _state.update {
                     it.copy(draft = null, selected = draft.date, month = YearMonth.from(draft.date))
                 }

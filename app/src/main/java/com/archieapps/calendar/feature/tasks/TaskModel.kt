@@ -67,6 +67,7 @@ data class TaskListState(
     val stale: Boolean = false,
     val resetTick: Int = 0,
     val filtersOpen: Boolean = false,
+    val needsCode: Boolean = false,
     val unauthorized: Boolean = false,
 ) {
     val empty: Boolean

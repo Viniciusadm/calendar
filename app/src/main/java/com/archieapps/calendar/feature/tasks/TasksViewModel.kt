@@ -270,8 +270,9 @@ class TasksViewModel(
         _state.update {
             rollback(it).copy(
                 saving = false,
-                notice = failure.message,
-                noticeTick = it.noticeTick + 1,
+                notice = if (failure.gated) null else failure.message,
+                noticeTick = if (failure.gated) it.noticeTick else it.noticeTick + 1,
+                needsCode = it.needsCode || failure.gated,
                 undo = null,
                 unauthorized = it.unauthorized || failure.unauthorized,
             )
@@ -280,6 +281,10 @@ class TasksViewModel(
         if (failure.gated) {
             reload(settle = false)
         }
+    }
+
+    fun codePrompted() {
+        _state.update { it.copy(needsCode = false) }
     }
 
     private fun fetch(fresh: Boolean, settle: Boolean) {

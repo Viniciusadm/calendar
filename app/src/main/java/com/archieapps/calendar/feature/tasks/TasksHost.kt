@@ -25,6 +25,7 @@ fun TasksHost(
     snackbar: SnackbarHostState,
     onOpen: (CalendarEntry) -> Unit,
     onDetailedAdd: () -> Unit,
+    onNeedsCode: () -> Unit,
     onWrote: () -> Unit,
 ) {
     val colors = LocalChronicle.current
@@ -39,6 +40,13 @@ fun TasksHost(
         if (writeTick != seenTick) {
             seenTick = writeTick
             viewModel.reloadIfStale()
+        }
+    }
+
+    LaunchedEffect(state.needsCode) {
+        if (state.needsCode) {
+            onNeedsCode()
+            viewModel.codePrompted()
         }
     }
 

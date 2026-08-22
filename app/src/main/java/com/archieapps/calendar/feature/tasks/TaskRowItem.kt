@@ -175,18 +175,16 @@ private fun PriorityMark(priority: String) {
         else -> null
     }
 
-    if (tint == null) {
-        Spacer(Modifier.width(Space.md))
-
-        return
-    }
-
-    Row(
-        modifier = Modifier.padding(top = Space.md, start = Space.sm, end = Space.xs),
-        horizontalArrangement = Arrangement.spacedBy(Space.xs),
-        verticalAlignment = Alignment.CenterVertically,
+    Box(
+        modifier = Modifier
+            .padding(start = Space.md)
+            .height(nodeBox)
+            .width(Stroke.node),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(6.dp).clip(CircleShape).background(tint))
+        if (tint != null) {
+            Spacer(Modifier.size(Stroke.node).clip(CircleShape).background(tint))
+        }
     }
 }
 

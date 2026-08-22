@@ -279,6 +279,7 @@ private fun Shell(
                     snackbar = snackbar,
                     onOpen = viewModel::focus,
                     onDetailedAdd = viewModel::newTask,
+                    onNeedsCode = viewModel::askForCode,
                     onWrote = { viewModel.reload() },
                 )
 
