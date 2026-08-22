@@ -1,39 +1,55 @@
 package com.archieapps.calendar.design.components
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
-import com.archieapps.calendar.design.SheetTitle
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Search
+
+@Composable
+fun Glyph(
+    icon: ImageVector,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    size: Dp = 18.dp,
+) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = tint,
+        modifier = modifier.size(size),
+    )
+}
 
 @Composable
 fun CircleButton(
-    glyph: String,
+    icon: ImageVector,
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     diameter: Int = 40,
+    tint: Color? = null,
 ) {
     val colors = LocalChronicle.current
 
@@ -46,7 +62,34 @@ fun CircleButton(
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        Text(glyph, style = SheetTitle.copy(fontSize = 20.sp, letterSpacing = 0.sp), color = colors.slate)
+        Glyph(icon = icon, tint = tint ?: colors.slate, size = (diameter * 0.45f).dp)
+    }
+}
+
+@Composable
+fun ActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    diameter: Int = 56,
+) {
+    val colors = LocalChronicle.current
+
+    Box(
+        modifier = modifier
+            .size(diameter.dp)
+            .clip(CircleShape)
+            .background(colors.brand)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Glyph(
+            icon = icon,
+            tint = if (colors.isDark) colors.ground else Color.White,
+            size = (diameter * 0.44f).dp,
+        )
     }
 }
 
@@ -57,42 +100,13 @@ fun SearchButton(
     modifier: Modifier = Modifier,
     diameter: Int = 36,
 ) {
-    val colors = LocalChronicle.current
-
-    Box(
-        modifier = modifier
-            .size(diameter.dp)
-            .clip(CircleShape)
-            .border(1.dp, colors.hairline, CircleShape)
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center,
-    ) {
-        Spacer(
-            Modifier.size((diameter / 2).dp).drawBehind {
-                val stroke = 1.5.dp.toPx()
-                val radius = size.minDimension * 0.34f
-                val center = Offset(size.width * 0.42f, size.height * 0.42f)
-
-                drawCircle(
-                    color = colors.slate,
-                    radius = radius,
-                    center = center,
-                    style = DrawStroke(width = stroke),
-                )
-
-                val edge = radius * 0.72f
-
-                drawLine(
-                    color = colors.slate,
-                    start = Offset(center.x + edge, center.y + edge),
-                    end = Offset(size.width * 0.96f, size.height * 0.96f),
-                    strokeWidth = stroke,
-                    cap = StrokeCap.Round,
-                )
-            }
-        )
-    }
+    CircleButton(
+        icon = Lucide.Search,
+        label = label,
+        onClick = onClick,
+        modifier = modifier,
+        diameter = diameter,
+    )
 }
 
 @Composable

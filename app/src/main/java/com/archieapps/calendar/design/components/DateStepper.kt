@@ -9,6 +9,11 @@ import androidx.compose.ui.Modifier
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.Space
+import com.composables.icons.lucide.ChevronLeft
+import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.ChevronsLeft
+import com.composables.icons.lucide.ChevronsRight
+import com.composables.icons.lucide.Lucide
 import java.time.LocalDate
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
@@ -32,10 +37,10 @@ fun DateStepper(
         horizontalArrangement = Arrangement.spacedBy(Space.md),
     ) {
         if (months) {
-            CircleButton(glyph = "«", label = "Um mês antes", onClick = { onPick(date.minusMonths(1)) }, diameter = 36)
+            CircleButton(icon = Lucide.ChevronsLeft, label = "Um mês antes", onClick = { onPick(date.minusMonths(1)) }, diameter = 36)
         }
 
-        CircleButton(glyph = "−", label = "Um dia antes", onClick = { onPick(date.minusDays(1)) }, diameter = 36)
+        CircleButton(icon = Lucide.ChevronLeft, label = "Um dia antes", onClick = { onPick(date.minusDays(1)) }, diameter = 36)
 
         Text(
             text = "$weekday, ${date.dayOfMonth} de $month",
@@ -43,10 +48,10 @@ fun DateStepper(
             color = colors.ink,
         )
 
-        CircleButton(glyph = "+", label = "Um dia depois", onClick = { onPick(date.plusDays(1)) }, diameter = 36)
+        CircleButton(icon = Lucide.ChevronRight, label = "Um dia depois", onClick = { onPick(date.plusDays(1)) }, diameter = 36)
 
         if (months) {
-            CircleButton(glyph = "»", label = "Um mês depois", onClick = { onPick(date.plusMonths(1)) }, diameter = 36)
+            CircleButton(icon = Lucide.ChevronsRight, label = "Um mês depois", onClick = { onPick(date.plusMonths(1)) }, diameter = 36)
         }
     }
 }

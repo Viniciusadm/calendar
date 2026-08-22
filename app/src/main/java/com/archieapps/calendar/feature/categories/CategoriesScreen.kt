@@ -39,6 +39,12 @@ import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
 import com.archieapps.calendar.design.colorFromValue
 import com.archieapps.calendar.design.components.CircleButton
+import com.archieapps.calendar.design.components.Glyph
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronLeft
+import com.composables.icons.lucide.ChevronUp
+import com.composables.icons.lucide.Lucide
 import com.archieapps.calendar.design.components.Hairline
 import com.archieapps.calendar.design.components.TextAction
 
@@ -65,7 +71,7 @@ fun CategoriesScreen(
         Spacer(Modifier.height(Space.xl))
 
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            CircleButton(glyph = "‹", label = "Voltar", onClick = onBack)
+            CircleButton(icon = Lucide.ChevronLeft, label = "Voltar", onClick = onBack)
 
             Spacer(Modifier.width(Space.md))
 
@@ -166,8 +172,8 @@ private fun CategoryRow(
                 }
             }
 
-            Arrow(glyph = "↑", label = "Subir ${category.name}", enabled = canGoUp, onClick = onUp)
-            Arrow(glyph = "↓", label = "Descer ${category.name}", enabled = canGoDown, onClick = onDown)
+            Arrow(icon = Lucide.ChevronUp, label = "Subir ${category.name}", enabled = canGoUp, onClick = onUp)
+            Arrow(icon = Lucide.ChevronDown, label = "Descer ${category.name}", enabled = canGoDown, onClick = onDown)
         }
 
         Row(
@@ -190,18 +196,17 @@ private fun Action(label: String, color: Color, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Arrow(glyph: String, label: String, enabled: Boolean, onClick: () -> Unit) {
+private fun Arrow(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
     val colors = LocalChronicle.current
 
-    Text(
-        text = glyph,
-        style = SheetTitle.copy(fontSize = 18.sp, letterSpacing = 0.sp),
-        color = if (enabled) colors.slate else colors.hairline,
+    Glyph(
+        icon = icon,
+        tint = if (enabled) colors.slate else colors.hairline,
         modifier = Modifier
             .clip(CircleShape)
             .clickable(enabled = enabled, onClick = onClick)
             .semantics { contentDescription = label }
-            .padding(horizontal = Space.sm, vertical = Space.sm),
+            .padding(Space.sm),
     )
 }
 

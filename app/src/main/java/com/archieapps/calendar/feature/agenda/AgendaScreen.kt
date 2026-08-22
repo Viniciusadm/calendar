@@ -36,6 +36,8 @@ import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
 import com.archieapps.calendar.design.components.CircleButton
+import com.composables.icons.lucide.ChevronLeft
+import com.composables.icons.lucide.Lucide
 import com.archieapps.calendar.design.components.Hairline
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
@@ -164,7 +166,7 @@ private fun AgendaHeader(
         Spacer(Modifier.height(Space.xl))
 
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            CircleButton(glyph = "‹", label = "Voltar", onClick = onBack)
+            CircleButton(icon = Lucide.ChevronLeft, label = "Voltar", onClick = onBack)
 
             Spacer(Modifier.width(Space.md))
 

@@ -11,12 +11,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,7 +24,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -40,9 +37,11 @@ import com.archieapps.calendar.core.net.ApiResult
 import com.archieapps.calendar.core.net.CalendarApi
 import com.archieapps.calendar.core.store.Settings
 import com.archieapps.calendar.core.sync.ReminderSync
-import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
+import com.archieapps.calendar.design.components.ActionButton
 import com.archieapps.calendar.design.components.TabBar
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Plus
 import com.archieapps.calendar.feature.agenda.AgendaHost
 import com.archieapps.calendar.feature.agenda.AgendaViewModel
 import com.archieapps.calendar.feature.auth.AccessCodeSheet
@@ -234,14 +233,12 @@ private fun Shell(
             }
         },
         floatingActionButton = {
-            if (leaf == Leaf.Root && tab != Tab.Settings) {
-                FloatingActionButton(
-                    onClick = { if (tab == Tab.Tasks) viewModel.newTask() else viewModel.newEvent() },
-                    containerColor = colors.brand,
-                    contentColor = if (colors.isDark) colors.ground else Color.White,
-                ) {
-                    Text("+", style = Eyebrow)
-                }
+            if (leaf == Leaf.Root && tab == Tab.Calendar) {
+                ActionButton(
+                    icon = Lucide.Plus,
+                    label = "Novo evento",
+                    onClick = viewModel::newEvent,
+                )
             }
         },
     ) { insets ->
@@ -281,6 +278,7 @@ private fun Shell(
                     writeTick = state.writeTick,
                     snackbar = snackbar,
                     onOpen = viewModel::focus,
+                    onDetailedAdd = viewModel::newTask,
                     onWrote = { viewModel.reload() },
                 )
 

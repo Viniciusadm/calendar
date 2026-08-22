@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
@@ -38,6 +40,7 @@ fun HairlineField(
     imeAction: ImeAction = ImeAction.Next,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     onImeAction: (() -> Unit)? = null,
+    focusRequester: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
@@ -47,8 +50,10 @@ fun HairlineField(
     )
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(label.uppercase(), style = Eyebrow, color = colors.slate)
-        Spacer(Modifier.height(Space.sm))
+        if (label.isNotBlank()) {
+            Text(label.uppercase(), style = Eyebrow, color = colors.slate)
+            Spacer(Modifier.height(Space.sm))
+        }
 
         CompositionLocalProvider(LocalTextSelectionColors provides selection) {
             BasicTextField(
@@ -66,6 +71,7 @@ fun HairlineField(
                 visualTransformation = visualTransformation,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(if (focusRequester == null) Modifier else Modifier.focusRequester(focusRequester))
                     .drawBehind {
                         drawLine(
                             color = colors.hairline,

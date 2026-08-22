@@ -34,6 +34,9 @@ import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Minus
+import com.composables.icons.lucide.Plus
 
 @Composable
 fun Stepper(
@@ -67,7 +70,7 @@ fun Stepper(
         horizontalArrangement = Arrangement.spacedBy(Space.md),
     ) {
         CircleButton(
-            glyph = "−",
+            icon = Lucide.Minus,
             label = "Diminuir",
             onClick = { step(-1) },
             diameter = 36,
@@ -121,7 +124,7 @@ fun Stepper(
         }
 
         CircleButton(
-            glyph = "+",
+            icon = Lucide.Plus,
             label = "Aumentar",
             onClick = { step(1) },
             diameter = 36,

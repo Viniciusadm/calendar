@@ -24,6 +24,7 @@ fun TasksHost(
     writeTick: Int,
     snackbar: SnackbarHostState,
     onOpen: (CalendarEntry) -> Unit,
+    onDetailedAdd: () -> Unit,
     onWrote: () -> Unit,
 ) {
     val colors = LocalChronicle.current
@@ -71,6 +72,7 @@ fun TasksHost(
             viewModel.quickAdd(title)
             onWrote()
         },
+        onDetailedAdd = onDetailedAdd,
         onOpen = onOpen,
         onToggle = { entry ->
             viewModel.toggleCompletion(entry)

@@ -1,6 +1,10 @@
 package com.archieapps.calendar.feature.tasks
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,27 +32,30 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.sp
 import com.archieapps.calendar.core.net.TaskSummaryDto
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.EntryTitle
 import com.archieapps.calendar.design.Eyebrow
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
+import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.Stroke
 import com.archieapps.calendar.design.components.CircleButton
 import com.archieapps.calendar.design.components.Hairline
 import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
-import com.archieapps.calendar.design.components.ScrollingPills
-import com.archieapps.calendar.design.components.SearchButton
 import com.archieapps.calendar.design.components.TextAction
 import com.archieapps.calendar.feature.calendar.CalendarEntry
+import com.composables.icons.lucide.ListFilter
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Search
+import com.composables.icons.lucide.X
 import java.time.LocalDate
 
 private const val prefetchRows = 4
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TasksScreen(
     state: TaskListState,
@@ -58,6 +65,7 @@ fun TasksScreen(
     onClearFilters: () -> Unit,
     onOpenFilters: () -> Unit,
     onQuickAdd: (String) -> Unit,
+    onDetailedAdd: () -> Unit,
     onOpen: (CalendarEntry) -> Unit,
     onToggle: (CalendarEntry) -> Unit,
     onLoadMore: () -> Unit,
@@ -71,6 +79,7 @@ fun TasksScreen(
     val today = LocalDate.now()
 
     var searching by remember { mutableStateOf(false) }
+    var adding by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
 
     LaunchedEffect(listState) {
@@ -80,12 +89,6 @@ fun TasksScreen(
 
             info.totalItemsCount > 0 && last >= info.totalItemsCount - 1 - prefetchRows
         }.collect { near -> if (near) onLoadMore() }
-    }
-
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
-            if (scrolling) focus.clearFocus()
-        }
     }
 
     LaunchedEffect(state.resetTick) {
@@ -101,42 +104,58 @@ fun TasksScreen(
 
                 Spacer(Modifier.weight(1f))
 
-                if (state.activeFilterCount > 0) {
-                    TextAction("limpar", onClearFilters, colors.brand, style = Eyebrow, horizontal = Space.sm)
-                }
-
-                SearchButton(
+                CircleButton(
+                    icon = if (searching) Lucide.X else Lucide.Search,
                     label = if (searching) "Fechar busca" else "Buscar tarefa",
                     onClick = {
                         searching = !searching
 
                         if (!searching && state.query.isNotBlank()) onQuery("")
                     },
+                    diameter = 38,
                 )
 
                 Spacer(Modifier.width(Space.sm))
 
                 CircleButton(
-                    glyph = if (state.activeFilterCount > 0) "•" else "≡",
-                    label = "Filtros",
+                    icon = Lucide.ListFilter,
+                    label = if (state.activeFilterCount > 0) "Filtros ativos" else "Filtros",
                     onClick = onOpenFilters,
-                    diameter = 36,
+                    diameter = 38,
+                    tint = if (state.activeFilterCount > 0) colors.brand else null,
                 )
             }
 
-            state.summary?.let { summary ->
-                Spacer(Modifier.height(Space.sm))
-                Text(
-                    text = summaryLine(summary),
-                    style = Eyebrow,
-                    color = colors.slate,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            Spacer(Modifier.height(Space.xs))
+
+            Text(
+                text = summaryLine(state.summary),
+                style = EntryMeta,
+                color = colors.slate,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+
+            if (searching) {
+                Spacer(Modifier.height(Space.lg))
+
+                HairlineField(
+                    value = state.draftQuery,
+                    onValueChange = onQuery,
+                    label = "",
+                    placeholder = "título da tarefa",
+                    textStyle = EntryTitle,
+                    imeAction = ImeAction.Search,
+                    onImeAction = onSubmitQuery,
                 )
             }
 
             Spacer(Modifier.height(Space.lg))
 
-            ScrollingPills {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.sm),
+                verticalArrangement = Arrangement.spacedBy(Space.sm),
+            ) {
                 TaskFilter.entries.forEach { filter ->
                     Pill(
                         label = pillLabel(filter, state.countOf(filter)),
@@ -144,32 +163,6 @@ fun TasksScreen(
                         onClick = { onFilter(filter) },
                     )
                 }
-            }
-
-            Spacer(Modifier.height(Space.lg))
-
-            if (searching) {
-                HairlineField(
-                    value = state.draftQuery,
-                    onValueChange = onQuery,
-                    label = "buscar",
-                    placeholder = "título da tarefa",
-                    imeAction = ImeAction.Search,
-                    onImeAction = onSubmitQuery,
-                )
-            } else {
-                HairlineField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    label = "nova tarefa",
-                    placeholder = "o que precisa ser feito hoje",
-                    imeAction = ImeAction.Done,
-                    onImeAction = {
-                        onQuickAdd(draft)
-                        draft = ""
-                        focus.clearFocus()
-                    },
-                )
             }
 
             Spacer(Modifier.height(Space.lg))
@@ -185,32 +178,56 @@ fun TasksScreen(
             Hairline()
         }
 
-        state.error?.let { message ->
-            Column(Modifier.padding(horizontal = Space.lg)) {
-                Spacer(Modifier.height(Space.lg))
-                Text(message, style = EntryMeta, color = colors.ink)
-                TextAction("Tentar de novo", onRetry, colors.brand, style = Eyebrow)
-            }
-        }
-
-        if (state.empty) {
-            TasksEmpty(
-                filter = state.filter,
-                filtered = state.activeFilterCount > 0,
-                onClearFilters = onClearFilters,
-            )
-        }
-
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(
                 start = Space.lg,
                 end = Space.lg,
-                top = Space.lg,
-                bottom = Space.fabClearance,
+                bottom = Space.xxl,
             ),
         ) {
+            item(key = "quickAdd", contentType = "quickAdd") {
+                QuickAdd(
+                    draft = draft,
+                    expanded = adding,
+                    onExpand = { adding = true },
+                    onDraft = { draft = it },
+                    onSubmit = {
+                        if (draft.isNotBlank()) {
+                            onQuickAdd(draft)
+                            draft = ""
+                            adding = false
+                            focus.clearFocus()
+                        }
+                    },
+                    onDetailed = {
+                        adding = false
+                        focus.clearFocus()
+                        onDetailedAdd()
+                    },
+                )
+            }
+
+            state.error?.let { message ->
+                item(key = "error", contentType = "error") {
+                    Column(Modifier.padding(top = Space.lg)) {
+                        Text(message, style = EntryMeta, color = colors.ink)
+                        TextAction("Tentar de novo", onRetry, colors.brand, style = Eyebrow)
+                    }
+                }
+            }
+
+            if (state.empty && !adding) {
+                item(key = "empty", contentType = "empty") {
+                    TasksEmpty(
+                        filter = state.filter,
+                        filtered = state.activeFilterCount > 0,
+                        onClearFilters = onClearFilters,
+                    )
+                }
+            }
+
             items(state.rows, key = { it.id }) { entry ->
                 TaskRowItem(
                     entry = entry,
@@ -231,15 +248,21 @@ fun TasksScreen(
 private fun TasksEmpty(filter: TaskFilter, filtered: Boolean, onClearFilters: () -> Unit) {
     val colors = LocalChronicle.current
 
-    Column(Modifier.padding(horizontal = Space.lg, vertical = Space.lg)) {
-        Text(
-            text = if (filtered) "Nada encontrado com esses filtros." else emptyLine(filter),
-            style = EntryTitle,
-            color = colors.slate,
-        )
+    Box(modifier = Modifier.fillMaxWidth().padding(top = Space.huge), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = if (filtered) "Nada com esses filtros." else emptyHeadline(filter),
+                style = SheetTitle,
+                color = colors.ink,
+            )
 
-        if (filtered) {
-            TextAction("limpar filtros", onClearFilters, colors.brand, style = Eyebrow)
+            Spacer(Modifier.height(Space.sm))
+
+            if (filtered) {
+                TextAction("limpar filtros", onClearFilters, colors.brand, style = Eyebrow)
+            } else {
+                Text(emptyHint(filter), style = EntryMeta, color = colors.slate)
+            }
         }
     }
 }
@@ -266,15 +289,11 @@ private fun TasksTail(state: TaskListState, onRetryTail: () -> Unit, onOpenFilte
             )
 
             state.truncated -> {
-                Text(
-                    text = "há mais tarefas do que cabe numa varredura",
-                    style = EntryMeta,
-                    color = colors.slate,
-                )
+                Text("há mais do que cabe numa varredura", style = EntryMeta, color = colors.slate)
                 TextAction("estreitar por filtro", onOpenFilters, colors.brand, style = Eyebrow)
             }
 
-            state.rows.isNotEmpty() && state.page >= state.lastPage -> Text(
+            state.rows.size > 6 && state.page >= state.lastPage -> Text(
                 text = tailLine(state).uppercase(),
                 style = Eyebrow,
                 color = colors.slate,
@@ -284,10 +303,14 @@ private fun TasksTail(state: TaskListState, onRetryTail: () -> Unit, onOpenFilte
 }
 
 private fun pillLabel(filter: TaskFilter, count: Int?): String =
-    if (count == null || count == 0) filter.label else "${filter.label} · $count"
+    if (count == null || count == 0) filter.label else "${filter.label} $count"
 
-private fun summaryLine(summary: TaskSummaryDto): String =
-    buildList {
+private fun summaryLine(summary: TaskSummaryDto?): String {
+    if (summary == null) {
+        return "carregando…"
+    }
+
+    val parts = buildList {
         if (summary.day.scheduled > 0) {
             add("${summary.day.completed} de ${summary.day.scheduled} hoje")
         }
@@ -295,15 +318,25 @@ private fun summaryLine(summary: TaskSummaryDto): String =
             add("${summary.streak.days} dias seguidos")
         }
         summary.rate.percent?.let { add("$it% em ${summary.rate.days} dias") }
-    }.joinToString(" · ").ifBlank { "nenhuma tarefa para hoje" }
+    }
 
-private fun emptyLine(filter: TaskFilter): String = when (filter) {
-    TaskFilter.Pending -> "Nada pendente. Dia limpo."
+    return parts.joinToString(" · ").ifBlank { "sem tarefa marcada para hoje" }
+}
+
+private fun emptyHeadline(filter: TaskFilter): String = when (filter) {
+    TaskFilter.Pending -> "Dia limpo."
     TaskFilter.Today -> "Nada para hoje."
-    TaskFilter.Upcoming -> "Nada marcado daqui pra frente."
-    TaskFilter.Overdue -> "Nenhuma tarefa atrasada."
-    TaskFilter.All -> "Nenhuma tarefa cadastrada."
-    TaskFilter.Done -> "Nenhuma tarefa concluída ainda."
+    TaskFilter.Upcoming -> "Nada à frente."
+    TaskFilter.Overdue -> "Nada atrasado."
+    TaskFilter.All -> "Nenhuma tarefa ainda."
+    TaskFilter.Done -> "Nada concluído ainda."
+}
+
+private fun emptyHint(filter: TaskFilter): String = when (filter) {
+    TaskFilter.Overdue -> "tarefa que repete não entra aqui"
+    TaskFilter.Done -> "o que você marcar aparece aqui"
+    TaskFilter.Upcoming -> "toque em nova tarefa para agendar"
+    else -> "toque em nova tarefa para começar"
 }
 
 private fun tailLine(state: TaskListState): String =

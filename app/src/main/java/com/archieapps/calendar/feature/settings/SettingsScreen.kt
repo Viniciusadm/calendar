@@ -1,13 +1,14 @@
 package com.archieapps.calendar.feature.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -15,19 +16,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.text.style.TextAlign
 import com.archieapps.calendar.design.EntryMeta
-import com.archieapps.calendar.design.Eyebrow
+import com.archieapps.calendar.design.EntryTitle
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.MonthTitle
 import com.archieapps.calendar.design.SheetTitle
 import com.archieapps.calendar.design.Space
 import com.archieapps.calendar.design.components.Avatar
-import com.archieapps.calendar.design.components.ChoiceRow
-import com.archieapps.calendar.design.components.Hairline
+import com.archieapps.calendar.design.components.CircleButton
+import com.archieapps.calendar.design.components.Group
 import com.archieapps.calendar.design.components.NavRow
-import com.archieapps.calendar.design.components.Section
+import com.archieapps.calendar.design.components.Pill
+import com.archieapps.calendar.design.components.PillRow
 import com.archieapps.calendar.design.components.SwitchRow
 import com.archieapps.calendar.design.components.TextAction
+import com.archieapps.calendar.design.components.ValueRow
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Minus
+import com.composables.icons.lucide.Plus
 
 @Composable
 fun SettingsScreen(
@@ -62,62 +69,72 @@ fun SettingsScreen(
         Spacer(Modifier.height(Space.xl))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Avatar(initial = initial, label = "Sua foto", photo = photo, diameter = 56)
+            Avatar(initial = initial, label = "Sua foto", photo = photo, diameter = 52)
 
             Spacer(Modifier.width(Space.md))
 
             Column {
                 Text(name ?: "Você", style = SheetTitle, color = colors.ink)
 
-                if (email != null) {
+                email?.let {
                     Spacer(Modifier.height(Space.xxs))
-                    Text(email, style = EntryMeta, color = colors.slate)
+                    Text(it, style = EntryMeta, color = colors.slate)
                 }
             }
         }
 
-        Spacer(Modifier.height(Space.xl))
-        Hairline()
+        Group("aparência")
 
-        ChoiceRow(
-            label = "tema",
-            options = themeChoices,
-            selected = preferences.themeMode,
-            onSelect = { value -> onPreferences { it.copy(themeMode = value) } },
-        )
+        ValueRow(label = "tema") {
+            PillRow {
+                themeChoices.forEach { (value, text) ->
+                    Pill(
+                        label = text,
+                        selected = preferences.themeMode == value,
+                        onClick = { onPreferences { it.copy(themeMode = value) } },
+                    )
+                }
+            }
+        }
 
-        ChoiceRow(
-            label = "semana começa em",
-            options = weekStartChoices,
-            selected = preferences.weekStartValue,
-            onSelect = { value -> onPreferences { it.copy(weekStartsMonday = value == "monday") } },
-        )
+        ValueRow(label = "primeiro dia") {
+            PillRow {
+                weekStartChoices.forEach { (value, text) ->
+                    Pill(
+                        label = text,
+                        selected = preferences.weekStartValue == value,
+                        onClick = { onPreferences { it.copy(weekStartsMonday = value == "monday") } },
+                    )
+                }
+            }
+        }
 
-        Section("tarefas", top = Space.xl)
+        Group("tarefas")
 
-        ChoiceRow(
-            label = "abrir em",
-            options = initialFilterChoices,
-            selected = preferences.initialTaskFilter,
-            onSelect = { value -> onPreferences { it.copy(initialTaskFilter = value) } },
-        )
+        ValueRow(label = "abrir em") {
+            PillRow {
+                initialFilterChoices.forEach { (value, text) ->
+                    Pill(
+                        label = text,
+                        selected = preferences.initialTaskFilter == value,
+                        onClick = { onPreferences { it.copy(initialTaskFilter = value) } },
+                    )
+                }
+            }
+        }
 
         SwitchRow(
-            label = "tarefas recorrentes na grade",
-            caption = "sem isso, rotina aparece só no dia de hoje e no dia selecionado",
+            label = "rotina em todos os dias",
+            caption = "senão, só no dia de hoje e no que você tocar",
             checked = preferences.expandRecurringInGrid,
             onToggle = { value -> onPreferences { it.copy(expandRecurringInGrid = value) } },
         )
 
-        Hairline()
+        Group("conteúdo")
 
-        Section("conteúdo", top = Space.xl)
+        NavRow(label = "categorias", caption = "cor, ícone e prioridade padrão", onClick = onCategories)
 
-        NavRow(label = "categorias", onClick = onCategories)
-
-        Hairline()
-
-        Section("notificações", top = Space.xl)
+        Group("notificações")
 
         SwitchRow(
             label = "resumo diário",
@@ -127,27 +144,33 @@ fun SettingsScreen(
         )
 
         if (preferences.digestEnabled) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = Space.sm),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("horário", style = Eyebrow, color = colors.slate, modifier = Modifier.weight(1f))
+            ValueRow(label = "horário") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.sm),
+                ) {
+                    CircleButton(
+                        icon = Lucide.Minus,
+                        label = "Meia hora antes",
+                        onClick = { onPreferences { it.copy(digestMinuteOfDay = previousDigestSlot(it.digestMinuteOfDay)) } },
+                        diameter = 34,
+                    )
 
-                TextAction(
-                    label = "−",
-                    onClick = { onPreferences { it.copy(digestMinuteOfDay = previousDigestSlot(it.digestMinuteOfDay)) } },
-                    color = colors.slate,
-                    horizontal = Space.md,
-                )
+                    Text(
+                        text = preferences.digestLabel,
+                        style = EntryTitle,
+                        color = colors.ink,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.widthIn(min = Space.huge),
+                    )
 
-                Text(preferences.digestLabel, style = SheetTitle, color = colors.ink)
-
-                TextAction(
-                    label = "+",
-                    onClick = { onPreferences { it.copy(digestMinuteOfDay = nextDigestSlot(it.digestMinuteOfDay)) } },
-                    color = colors.slate,
-                    horizontal = Space.md,
-                )
+                    CircleButton(
+                        icon = Lucide.Plus,
+                        label = "Meia hora depois",
+                        onClick = { onPreferences { it.copy(digestMinuteOfDay = nextDigestSlot(it.digestMinuteOfDay)) } },
+                        diameter = 34,
+                    )
+                }
             }
 
             SwitchRow(
@@ -158,20 +181,22 @@ fun SettingsScreen(
         }
 
         if (!exactAlarmsAllowed && canRequestExactAlarms) {
-            NavRow(label = "permitir alarme exato", onClick = onRequestExactAlarms)
+            NavRow(
+                label = "permitir alarme exato",
+                caption = "o Android está atrasando os lembretes",
+                onClick = onRequestExactAlarms,
+            )
         }
 
-        Hairline()
-
-        Section("privacidade", top = Space.xl)
+        Group("privacidade")
 
         if (unlocked) {
-            NavRow(label = "travar de novo", onClick = onLock)
+            NavRow(label = "travar de novo", caption = "esconde o que exige código", onClick = onLock)
         } else {
-            NavRow(label = "digitar o código", onClick = onAskCode)
+            NavRow(label = "digitar o código", caption = "mostra o que está protegido", onClick = onAskCode)
         }
 
-        Spacer(Modifier.height(Space.xl))
+        Spacer(Modifier.height(Space.xxl))
 
         TextAction("Sair da conta", onSignOut, colors.slate, stretch = true, align = Alignment.Center)
 
