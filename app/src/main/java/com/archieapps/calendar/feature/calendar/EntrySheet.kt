@@ -17,8 +17,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -26,6 +28,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import com.archieapps.calendar.core.action.TaskActions
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.EntryTitle
 import com.archieapps.calendar.design.Eyebrow
@@ -51,6 +54,7 @@ fun EntrySheet(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
+    val context = LocalContext.current
     val ready = (detail as? DetailState.Ready)?.detail
     val ownEntry = entry.agency == Agency.Mine
 
@@ -87,6 +91,14 @@ fun EntrySheet(
                 horizontalArrangement = Arrangement.spacedBy(Space.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                entry.action?.let { action ->
+                    val caption = remember(action) {
+                        action.caption(if (action.isApp) TaskActions.appLabel(context, action.target) else null)
+                    }
+
+                    Pill(caption, { TaskActions.launch(context, action) }, colors.brand)
+                }
+
                 Pill("editar", onEdit, colors.ink)
 
                 if (entry.togglable()) {

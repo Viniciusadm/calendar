@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -52,6 +53,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.archieapps.calendar.core.action.TaskActions
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.EntryTitle
 import com.archieapps.calendar.design.LocalChronicle
@@ -61,8 +63,11 @@ import com.archieapps.calendar.design.TokenSuccess
 import com.archieapps.calendar.design.TokenWarning
 import com.archieapps.calendar.design.components.Glyph
 import com.archieapps.calendar.feature.calendar.CalendarEntry
+import com.archieapps.calendar.feature.calendar.TaskAction
 import com.archieapps.calendar.feature.calendar.togglable
+import com.composables.icons.lucide.AppWindow
 import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.ExternalLink
 import com.composables.icons.lucide.Lucide
 import java.time.LocalDate
 
@@ -86,9 +91,11 @@ fun TaskRowItem(
     today: LocalDate,
     onOpen: () -> Unit,
     onToggle: () -> Unit,
+    onActionFailed: (TaskAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
+    val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val overdue = TaskBucket.of(entry.bucket) == TaskBucket.Overdue
     val togglable = entry.togglable(today)
@@ -234,6 +241,17 @@ fun TaskRowItem(
             }
         }
 
+        entry.action?.let { action ->
+            ActionTarget(
+                action = action,
+                onClick = {
+                    if (!TaskActions.launch(context, action)) {
+                        onActionFailed(action)
+                    }
+                },
+            )
+        }
+
         DetailTarget(label = "Detalhes de ${entry.title}", onClick = onOpen)
     }
 }
@@ -323,6 +341,37 @@ private fun PriorityDot(priority: String, hidden: Boolean) {
 
     Spacer(Modifier.size(Stroke.node).clip(CircleShape).background(tint))
     Spacer(Modifier.width(Space.xs))
+}
+
+@Composable
+private fun ActionTarget(action: TaskAction, onClick: () -> Unit) {
+    val colors = LocalChronicle.current
+    val context = LocalContext.current
+    val caption = remember(action) {
+        action.caption(if (action.isApp) TaskActions.appLabel(context, action.target) else null)
+    }
+
+    Box(
+        modifier = Modifier
+            .minimumInteractiveComponentSize()
+            .size(chevronBox)
+            .clip(CircleShape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = colors.brand),
+                onClickLabel = "abrir",
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .semantics { contentDescription = "Abrir $caption" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Glyph(
+            icon = if (action.isApp) Lucide.AppWindow else Lucide.ExternalLink,
+            tint = colors.brand,
+            size = 17.dp,
+        )
+    }
 }
 
 @Composable

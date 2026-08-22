@@ -56,6 +56,7 @@ class TaskModelTest {
         bucket = bucket,
         streak = streak,
         editable = true,
+        action = null,
     )
 
     @Test

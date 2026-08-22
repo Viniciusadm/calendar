@@ -45,6 +45,7 @@ class AgendaPagingTest {
             bucket = null,
             streak = null,
             editable = true,
+            action = null,
         )
 
     @Test

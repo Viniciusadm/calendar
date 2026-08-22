@@ -1,5 +1,6 @@
 package com.archieapps.calendar.feature.calendar
 
+import com.archieapps.calendar.core.net.EventDto
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.serialization.json.JsonNull
@@ -9,6 +10,53 @@ import org.junit.Test
 
 class EventDraftTest {
     private val draft = EventDraft(title = "corrida", date = LocalDate.of(2026, 8, 12))
+
+    @Test
+    fun `payload omits the action when the entry is not a task`() {
+        val withAction = draft.copy(actionType = ActionKind.Link, actionTarget = "https://a.com")
+
+        assertEquals(JsonNull, withAction.toPayload()["actionType"])
+        assertEquals(JsonNull, withAction.toPayload()["actionTarget"])
+    }
+
+    @Test
+    fun `payload trims the target and drops a blank label`() {
+        val task = draft.copy(
+            isTask = true,
+            actionType = ActionKind.Link,
+            actionTarget = "  https://nubank.com.br  ",
+            actionLabel = "   ",
+        )
+
+        val payload = task.toPayload()
+
+        assertEquals("https://nubank.com.br", payload["actionTarget"]?.jsonPrimitive?.content)
+        assertEquals(JsonNull, payload["actionLabel"])
+    }
+
+    @Test
+    fun `editing a task keeps the action it already had`() {
+        val dto = EventDto(
+            id = 7,
+            title = "pagar aluguel",
+            nature = "task",
+            date = "2026-08-12",
+            actionType = "app",
+            actionTarget = "com.nu.production",
+            actionLabel = "Nubank",
+        )
+
+        val payload = EventDraft.from(dto).toPayload()
+
+        assertEquals("app", payload["actionType"]?.jsonPrimitive?.content)
+        assertEquals("com.nu.production", payload["actionTarget"]?.jsonPrimitive?.content)
+        assertEquals("Nubank", payload["actionLabel"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `a task cannot be saved with an action that has no target`() {
+        assertEquals(false, draft.copy(isTask = true, actionType = ActionKind.App).canSave)
+    }
 
     @Test
     fun `payload clears the recurrence when the event does not repeat`() {

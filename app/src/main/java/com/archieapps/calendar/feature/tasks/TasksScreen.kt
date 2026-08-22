@@ -47,6 +47,7 @@ import com.archieapps.calendar.design.components.HairlineField
 import com.archieapps.calendar.design.components.Pill
 import com.archieapps.calendar.design.components.TextAction
 import com.archieapps.calendar.feature.calendar.CalendarEntry
+import com.archieapps.calendar.feature.calendar.TaskAction
 import com.composables.icons.lucide.ListFilter
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Search
@@ -68,6 +69,7 @@ fun TasksScreen(
     onDetailedAdd: () -> Unit,
     onOpen: (CalendarEntry) -> Unit,
     onToggle: (CalendarEntry) -> Unit,
+    onActionFailed: (TaskAction) -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
     onRetryTail: () -> Unit,
@@ -235,6 +237,7 @@ fun TasksScreen(
                     today = today,
                     onOpen = { onOpen(entry) },
                     onToggle = { onToggle(entry) },
+                    onActionFailed = onActionFailed,
                 )
             }
 

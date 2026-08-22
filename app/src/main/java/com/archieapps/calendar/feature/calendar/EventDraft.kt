@@ -29,13 +29,18 @@ data class EventDraft(
     val priority: String = "none",
     val isTask: Boolean = false,
     val dueOffsetDays: Int = 0,
+    val actionType: String? = null,
+    val actionTarget: String = "",
+    val actionLabel: String = "",
     val recurrence: Recurrence = Recurrence(),
     val reminderMinutes: Int? = null,
     val days: Int = 1,
 ) {
     val isEditing: Boolean get() = eventId != null
 
-    val canSave: Boolean get() = title.isNotBlank()
+    val canSave: Boolean get() = title.isNotBlank() && (actionType == null || actionTarget.isNotBlank())
+
+    val hasAction: Boolean get() = isTask && actionType != null
 
     val dueDate: LocalDate get() = date.plusDays(dueOffsetDays.toLong())
 
@@ -65,6 +70,9 @@ data class EventDraft(
         put("description", description.trim().ifBlank { null })
         put("nature", if (isTask) "task" else "event")
         put("dueOffsetDays", if (isTask && dueOffsetDays > 0) dueOffsetDays else null)
+        put("actionType", if (hasAction) actionType else null)
+        put("actionTarget", if (hasAction) actionTarget.trim() else null)
+        put("actionLabel", if (hasAction) actionLabel.trim().ifBlank { null } else null)
         put("date", date.toString())
         put("allDay", allDay)
         if (allDay) {
@@ -99,6 +107,9 @@ data class EventDraft(
             priority = dto.priority,
             isTask = dto.nature == "task",
             dueOffsetDays = dto.dueOffsetDays ?: 0,
+            actionType = dto.actionType?.takeIf { it.isNotBlank() },
+            actionTarget = dto.actionTarget.orEmpty(),
+            actionLabel = dto.actionLabel.orEmpty(),
             recurrence = Recurrence.parse(dto.recurrence),
             reminderMinutes = dto.reminders.firstOrNull { it.active }?.minutesBefore,
             days = if (dto.allDay) (dto.durationMinutes / 1440).coerceAtLeast(1) else 1,

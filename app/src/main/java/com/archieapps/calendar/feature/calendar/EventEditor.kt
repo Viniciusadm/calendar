@@ -14,10 +14,16 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
+import com.archieapps.calendar.core.action.TaskActions
 import com.archieapps.calendar.core.net.CategoryDto
 import com.archieapps.calendar.design.EntryMeta
 import com.archieapps.calendar.design.ButtonLabel
@@ -56,6 +62,18 @@ fun EventEditor(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalChronicle.current
+    val context = LocalContext.current
+    var pickingApp by remember { mutableStateOf(false) }
+
+    if (pickingApp) {
+        AppPickerDialog(
+            onPick = { app ->
+                pickingApp = false
+                onChange { it.copy(actionTarget = app.packageName) }
+            },
+            onDismiss = { pickingApp = false },
+        )
+    }
 
     Column(
         modifier = modifier
@@ -147,6 +165,58 @@ fun EventEditor(
                     text = deadlineCaption(draft),
                     style = EntryMeta,
                     color = colors.slate,
+                )
+            }
+
+            Spacer(Modifier.height(Space.xl))
+            Section("ação")
+
+            PillRow {
+                Pill("nenhuma", draft.actionType == null, {
+                    onChange { it.copy(actionType = null, actionTarget = "", actionLabel = "") }
+                })
+                Pill("link", draft.actionType == ActionKind.Link, {
+                    onChange { it.copy(actionType = ActionKind.Link, actionTarget = "") }
+                })
+                Pill("app", draft.actionType == ActionKind.App, {
+                    onChange { it.copy(actionType = ActionKind.App, actionTarget = "") }
+                })
+            }
+
+            if (draft.actionType == ActionKind.Link) {
+                Spacer(Modifier.height(Space.md))
+
+                HairlineField(
+                    value = draft.actionTarget,
+                    onValueChange = { value -> onChange { it.copy(actionTarget = value) } },
+                    label = "link",
+                    placeholder = "https://…",
+                    keyboardType = KeyboardType.Uri,
+                )
+            }
+
+            if (draft.actionType == ActionKind.App) {
+                Spacer(Modifier.height(Space.md))
+
+                val chosen = draft.actionTarget.takeIf { it.isNotBlank() }
+
+                PillRow {
+                    Pill(
+                        label = chosen?.let { TaskActions.appLabel(context, it) ?: it } ?: "escolher aplicativo",
+                        selected = chosen != null,
+                        onClick = { pickingApp = true },
+                    )
+                }
+            }
+
+            if (draft.actionType != null) {
+                Spacer(Modifier.height(Space.md))
+
+                HairlineField(
+                    value = draft.actionLabel,
+                    onValueChange = { value -> onChange { it.copy(actionLabel = value) } },
+                    label = "rótulo",
+                    placeholder = "opcional",
                 )
             }
         }

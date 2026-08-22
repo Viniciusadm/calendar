@@ -3,6 +3,7 @@ package com.archieapps.calendar.feature.calendar
 import androidx.compose.ui.graphics.Color
 import com.archieapps.calendar.core.net.OccurrenceDto
 import com.archieapps.calendar.design.colorFromToken
+import java.net.URI
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
@@ -24,6 +25,32 @@ object CalendarBounds {
     fun pageOf(month: YearMonth): Int = first.until(clamp(month), ChronoUnit.MONTHS).toInt()
 
     fun monthAt(page: Int): YearMonth = first.plusMonths(page.toLong())
+}
+
+object ActionKind {
+    const val Link = "link"
+    const val App = "app"
+}
+
+data class TaskAction(
+    val type: String,
+    val target: String,
+    val label: String?,
+) {
+    val isApp: Boolean get() = type == ActionKind.App
+
+    fun caption(appName: String? = null): String {
+        label?.takeIf { it.isNotBlank() }?.let { return it }
+
+        return if (isApp) appName?.takeIf { it.isNotBlank() } ?: target else hostOf(target)
+    }
+
+    private fun hostOf(target: String): String {
+        val host = runCatching { URI(target).host }.getOrNull()?.takeIf { it.isNotBlank() }
+            ?: return target.substringAfter("://").substringBefore('/').ifBlank { target }
+
+        return host.removePrefix("www.")
+    }
 }
 
 data class CalendarEntry(
@@ -56,6 +83,7 @@ data class CalendarEntry(
     val bucket: String?,
     val streak: Int?,
     val editable: Boolean,
+    val action: TaskAction?,
 ) {
     val hasOwnDueDate: Boolean get() = dueDate != null && dueDate != date
 }
@@ -105,7 +133,15 @@ fun OccurrenceDto.toEntry(): CalendarEntry {
         bucket = bucket,
         streak = streak,
         editable = editable,
+        action = actionOf(),
     )
+}
+
+private fun OccurrenceDto.actionOf(): TaskAction? {
+    val type = actionType?.takeIf { it == ActionKind.Link || it == ActionKind.App } ?: return null
+    val target = actionTarget?.takeIf { it.isNotBlank() } ?: return null
+
+    return TaskAction(type = type, target = target, label = actionLabel?.takeIf { it.isNotBlank() })
 }
 
 private fun OccurrenceDto.noteFromMeta(): String? {

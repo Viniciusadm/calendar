@@ -11,11 +11,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.archieapps.calendar.core.net.CategoryDto
 import com.archieapps.calendar.design.LocalChronicle
 import com.archieapps.calendar.design.components.showBriefly
 import com.archieapps.calendar.feature.calendar.CalendarEntry
+import com.archieapps.calendar.feature.calendar.TaskAction
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +33,7 @@ fun TasksHost(
     onWrote: () -> Unit,
 ) {
     val colors = LocalChronicle.current
+    val scope = rememberCoroutineScope()
     val state by viewModel.state.collectAsState()
     var seenTick by remember { mutableStateOf(writeTick) }
 
@@ -85,6 +89,9 @@ fun TasksHost(
         onToggle = { entry ->
             viewModel.toggleCompletion(entry)
             onWrote()
+        },
+        onActionFailed = { action ->
+            scope.launch { snackbar.showBriefly("não foi possível abrir ${action.caption()}") }
         },
         onLoadMore = viewModel::loadMore,
         onRetry = viewModel::retry,
